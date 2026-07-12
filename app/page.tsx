@@ -1,8 +1,5 @@
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "@prisma/client"
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
+import { prisma } from "@/lib/prisma"
+import Script from "next/script"
 
 export default async function Home() {
   const tenants = await prisma.tenant.findMany({
@@ -18,7 +15,9 @@ export default async function Home() {
 
   return (
     <>
-      <script
+      <Script
+        id="domain-redirect"
+        strategy="beforeInteractive"
         dangerouslySetInnerHTML={{
           __html: `(function(){var m=${JSON.stringify(domainMap)};var entry=m[location.hostname];if(entry){var lang=navigator.language&&navigator.language.startsWith("ar")?"ar":entry.locale;if(!location.pathname.startsWith("/"+lang+"/"+entry.slug))location.replace("/"+lang+"/"+entry.slug+"/menu/")}})()`,
         }}
