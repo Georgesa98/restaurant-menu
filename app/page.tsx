@@ -1,6 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "@prisma/client"
-import Link from "next/link"
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
@@ -9,19 +8,19 @@ export default async function Home() {
   const tenants = await prisma.tenant.findMany({
     where: { isActive: true },
     orderBy: { name: "asc" },
-    select: { slug: true, name: true, description: true, primaryColor: true, domain: true },
+    select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
   })
 
-  const domainMap: Record<string, string> = {}
+  const domainMap: Record<string, { slug: string; locale: string }> = {}
   for (const t of tenants) {
-    if (t.domain) domainMap[t.domain] = t.slug
+    if (t.domain) domainMap[t.domain] = { slug: t.slug, locale: t.defaultLocale }
   }
 
   return (
     <>
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){var m=${JSON.stringify(domainMap)};var s=m[location.hostname];if(s&&!location.pathname.startsWith("/"+s))location.replace("/"+s+"/menu/")})()`,
+          __html: `(function(){var m=${JSON.stringify(domainMap)};var entry=m[location.hostname];if(entry){var lang=navigator.language&&navigator.language.startsWith("ar")?"ar":entry.locale;if(!location.pathname.startsWith("/"+lang+"/"+entry.slug))location.replace("/"+lang+"/"+entry.slug+"/menu/")}})()`,
         }}
       />
       <main className="max-w-2xl mx-auto px-4 py-16">
@@ -31,9 +30,9 @@ export default async function Home() {
         <p className="text-[var(--text-muted)] mb-8">Choose a restaurant to view their menu</p>
         <div className="grid gap-4">
           {tenants.map((t) => (
-            <Link
+            <a
               key={t.slug}
-              href={`/${t.slug}/menu`}
+              href={`/en/${t.slug}/menu`}
               className="block p-5 bg-[var(--surface)] rounded-[var(--radius-md)] shadow-[var(--shadow)] hover:shadow-md transition-shadow border-l-4"
               style={{ borderLeftColor: t.primaryColor }}
             >
@@ -44,7 +43,7 @@ export default async function Home() {
               {t.domain && (
                 <p className="text-xs mt-1 opacity-60">{t.domain}</p>
               )}
-            </Link>
+            </a>
           ))}
         </div>
       </main>
