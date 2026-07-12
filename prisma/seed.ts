@@ -6,10 +6,15 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  const trattoria = await prisma.tenant.upsert({
-    where: { slug: "trattoria-roma" },
-    update: {},
-    create: {
+  // Clear existing translations + items + categories so we can seed cleanly
+  await prisma.menuItemTranslation.deleteMany()
+  await prisma.categoryTranslation.deleteMany()
+  await prisma.menuItem.deleteMany()
+  await prisma.category.deleteMany()
+  await prisma.tenant.deleteMany()
+
+  const trattoria = await prisma.tenant.create({
+    data: {
       name: "Trattoria Roma",
       slug: "trattoria-roma",
       domain: "luigispizzeria.com",
@@ -33,13 +38,13 @@ async function main() {
       address: "42 Via Roma, Florence",
       phone: "+39 055 1234567",
       instagram: "@trattoriaroma",
+      defaultLocale: "en",
+      availableLocales: ["en", "ar"],
     },
   })
 
-  const sushiBar = await prisma.tenant.upsert({
-    where: { slug: "sakura-sushi" },
-    update: {},
-    create: {
+  const sushiBar = await prisma.tenant.create({
+    data: {
       name: "Sakura Sushi Bar",
       slug: "sakura-sushi",
       domain: "sakurasushi.com",
@@ -63,11 +68,14 @@ async function main() {
       address: "15 Cherry Blossom Lane, Tokyo",
       phone: "+81 3 1234 5678",
       instagram: "@sakurasushi",
+      defaultLocale: "en",
+      availableLocales: ["en", "ar"],
     },
   })
 
   // ── Categories + Items for Trattoria Roma ──
-  await prisma.category.create({
+
+  const antipasti = await prisma.category.create({
     data: {
       tenantId: trattoria.id, name: "Antipasti", slug: "antipasti", description: "To share", displayOrder: 0,
       items: {
@@ -78,9 +86,10 @@ async function main() {
         ],
       },
     },
+    include: { items: true },
   })
 
-  await prisma.category.create({
+  const pasta = await prisma.category.create({
     data: {
       tenantId: trattoria.id, name: "Pasta", slug: "pasta", displayOrder: 1,
       items: {
@@ -91,9 +100,10 @@ async function main() {
         ],
       },
     },
+    include: { items: true },
   })
 
-  await prisma.category.create({
+  const dolci = await prisma.category.create({
     data: {
       tenantId: trattoria.id, name: "Dolci", slug: "dolci", displayOrder: 2,
       items: {
@@ -103,10 +113,12 @@ async function main() {
         ],
       },
     },
+    include: { items: true },
   })
 
   // ── Categories + Items for Sakura Sushi ──
-  await prisma.category.create({
+
+  const appetizers = await prisma.category.create({
     data: {
       tenantId: sushiBar.id, name: "Appetizers", slug: "appetizers", displayOrder: 0,
       items: {
@@ -117,9 +129,10 @@ async function main() {
         ],
       },
     },
+    include: { items: true },
   })
 
-  await prisma.category.create({
+  const sushi = await prisma.category.create({
     data: {
       tenantId: sushiBar.id, name: "Sushi", slug: "sushi", displayOrder: 1,
       items: {
@@ -130,9 +143,10 @@ async function main() {
         ],
       },
     },
+    include: { items: true },
   })
 
-  await prisma.category.create({
+  const desserts = await prisma.category.create({
     data: {
       tenantId: sushiBar.id, name: "Desserts", slug: "desserts", displayOrder: 2,
       items: {
@@ -142,9 +156,56 @@ async function main() {
         ],
       },
     },
+    include: { items: true },
   })
 
-  console.log("Seeded 2 tenants with expanded theme tokens, 6 categories, 16 items")
+  // ── Arabic Translations for Trattoria Roma ──
+
+  await prisma.categoryTranslation.createMany({
+    data: [
+      { categoryId: antipasti.id, locale: "ar", name: "مقبلات", description: "للمشاركة" },
+      { categoryId: pasta.id, locale: "ar", name: "معكرونة", description: null },
+      { categoryId: dolci.id, locale: "ar", name: "حلويات", description: null },
+    ],
+  })
+
+  await prisma.menuItemTranslation.createMany({
+    data: [
+      { menuItemId: antipasti.items[0].id, locale: "ar", name: "بروشيتا بالطماطم والريحان", description: "خبز محمص مع طماطم طازجة وريحان وزيت زيتون" },
+      { menuItemId: antipasti.items[1].id, locale: "ar", name: "كالاماري مقلي", description: "حبار مقرمش مع ليمون وصلصة أيولي" },
+      { menuItemId: antipasti.items[2].id, locale: "ar", name: "بروسكيوتو بالبطيخ", description: "لحم بارما مع البطيخ الحلو" },
+      { menuItemId: pasta.items[0].id, locale: "ar", name: "سباغيتي كاربونارا", description: "غوانتشيال، صفار بيض، جبن بيكورينو، فلفل أسود" },
+      { menuItemId: pasta.items[1].id, locale: "ar", name: "بابارديل بالراغو", description: "راغو لحم بقري وخنزير مطهو ببطء على بابارديل طازجة" },
+      { menuItemId: pasta.items[2].id, locale: "ar", name: "نيوكي بالبيستو", description: "نيوكي البطاطس مع بيستو الريحان والصنوبر والبارميزان" },
+      { menuItemId: dolci.items[0].id, locale: "ar", name: "تيراميسو", description: "حلوى القهوة والمسكربون الكلاسيكية" },
+      { menuItemId: dolci.items[1].id, locale: "ar", name: "بانا كوتا", description: "بانا كوتا بالفانيليا مع صلصة التوت" },
+    ],
+  })
+
+  // ── Arabic Translations for Sakura Sushi ──
+
+  await prisma.categoryTranslation.createMany({
+    data: [
+      { categoryId: appetizers.id, locale: "ar", name: "مقبلات", description: null },
+      { categoryId: sushi.id, locale: "ar", name: "سوشي", description: null },
+      { categoryId: desserts.id, locale: "ar", name: "حلويات", description: null },
+    ],
+  })
+
+  await prisma.menuItemTranslation.createMany({
+    data: [
+      { menuItemId: appetizers.items[0].id, locale: "ar", name: "إدامامي", description: "فول الصويا المطهو على البخار مع ملح البحر" },
+      { menuItemId: appetizers.items[1].id, locale: "ar", name: "غيوزا", description: "زلابية لحم الخنزير المقلية مع صلصة الصويا" },
+      { menuItemId: appetizers.items[2].id, locale: "ar", name: "حساء ميسو", description: "التوفو والواكامي والبصل الأخضر في مرق الميسو" },
+      { menuItemId: sushi.items[0].id, locale: "ar", name: "نيجيري سلمون (قطعتان)", description: "سلمون أطلسي طازج على أرز مضغوط" },
+      { menuItemId: sushi.items[1].id, locale: "ar", name: "رول التنين (8 قطع)", description: "جمبري مقلي، أفوكادو، صلصة إيل، سمسم" },
+      { menuItemId: sushi.items[2].id, locale: "ar", name: "رول التونة الحارة (6 قطع)", description: "تونة طازجة، سريراتشا، خيار، سمسم" },
+      { menuItemId: desserts.items[0].id, locale: "ar", name: "آيس كريم موتشي (3 قطع)", description: "نكهات مشكلة: ماتشا، مانجو، فراولة" },
+      { menuItemId: desserts.items[1].id, locale: "ar", name: "تشيز كيك ماتشا", description: "تشيز كيك بنكهة الماتشا مع الفاصوليا الحمراء" },
+    ],
+  })
+
+  console.log("Seeded 2 tenants, 6 categories, 16 items, Arabic translations")
 }
 
 main()
