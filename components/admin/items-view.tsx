@@ -1,9 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useTranslations } from "next-intl"
 import { useAuth } from "./auth-provider"
 import { api } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Plus, Pencil, Trash2 } from "lucide-react"
 
 type Item = {
   id: string
@@ -29,7 +47,9 @@ export function ItemsView() {
   const [items, setItems] = useState<Item[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [editing, setEditing] = useState<Partial<Item> | null>(null)
-  const [localeTab, setLocaleTab] = useState("en")
+  const [open, setOpen] = useState(false)
+  const [categoryId, setCategoryId] = useState("")
+  const [filterCategory, setFilterCategory] = useState<string | null>(null)
 
   const tenantId = user?.role === "SUPER_ADMIN" ? "" : user?.tenantId
 
@@ -44,6 +64,11 @@ export function ItemsView() {
 
   useEffect(() => { load() }, [])
 
+  const filtered = useMemo(() => {
+    if (!filterCategory) return items
+    return items.filter((item) => item.categoryId === filterCategory)
+  }, [items, filterCategory])
+
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!editing) return
@@ -51,7 +76,7 @@ export function ItemsView() {
     const data = new FormData(form)
 
     const base = {
-      categoryId: data.get("categoryId") as string,
+      categoryId,
       name: data.get("name") as string,
       description: (data.get("description") as string) || null,
       price: parseFloat(data.get("price") as string),
@@ -81,6 +106,7 @@ export function ItemsView() {
       }
     }
 
+    setOpen(false)
     setEditing(null)
     load()
   }
@@ -96,131 +122,192 @@ export function ItemsView() {
     load()
   }
 
+  function openEdit(item?: Item) {
+    const defaults = item ?? {
+      id: "",
+      categoryId: "",
+      name: "",
+      description: "",
+      price: 0,
+      imageUrl: null,
+      isAvailable: true,
+      displayOrder: 0,
+      dietaryTags: [],
+      translations: [],
+    }
+    setEditing(defaults)
+    setCategoryId(defaults.categoryId ?? "")
+    setOpen(true)
+  }
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t("items")}</h1>
-        <button
-          onClick={() => setEditing({ categoryId: "", name: "", description: "", price: 0, isAvailable: true, displayOrder: 0, dietaryTags: [], imageUrl: null, translations: [], id: "" })}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700"
-        >
+    <div className="max-w-5xl">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold">{t("items")}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{items.length} total</p>
+        </div>
+        <Button onClick={() => openEdit()}>
+          <Plus className="size-4" />
           {t("addItem")}
-        </button>
+        </Button>
       </div>
 
-      <div className="space-y-2">
-        {items.map((item) => (
-          <div key={item.id} className="bg-white rounded-xl shadow-sm border p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          <button
+            onClick={() => setFilterCategory(null)}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              filterCategory === null
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setFilterCategory(c.id)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                filterCategory === c.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {filtered.map((item) => (
+          <div
+            key={item.id}
+            className="relative bg-card rounded-xl ring-1 ring-foreground/5 py-4 px-4 hover:ring-foreground/10 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center justify-between mb-2">
               <button
                 onClick={() => toggleAvailability(item)}
-                className={`w-3 h-3 rounded-full ${item.isAvailable ? "bg-green-500" : "bg-red-400"}`}
-                title={item.isAvailable ? t("isAvailable") : t("notAvailable")}
+                className={`size-2 rounded-full shrink-0 transition-colors ${
+                  item.isAvailable ? "bg-amber" : "bg-muted-foreground/30"
+                }`}
+                title={item.isAvailable ? t("isAvailable") : "notAvailable"}
               />
-              <div>
-                <p className="font-medium">{item.name}</p>
-                <p className="text-sm text-gray-500">
-                  {item.category?.name} — ${Number(item.price).toFixed(2)}
-                </p>
-              </div>
+              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                {item.category?.name}
+              </span>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => setEditing({ ...item })} className="text-sm text-blue-600 hover:underline">{t("edit")}</button>
-              <button onClick={() => remove(item.id)} className="text-sm text-red-600 hover:underline">{t("delete")}</button>
+            <p className="text-sm font-medium truncate mb-1">{item.name}</p>
+            {item.description && (
+              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold tabular-nums">
+                ${Number(item.price).toFixed(2)}
+              </span>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="xs" onClick={() => openEdit(item)}>
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button variant="ghost" size="xs" onClick={() => remove(item.id)}>
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {editing && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setEditing(null)}>
-          <form
-            onSubmit={save}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto"
-          >
-            <h2 className="text-lg font-bold">{editing.id ? t("edit") : t("create")} {t("items")}</h2>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">{t("categories")}</label>
-              <select name="categoryId" defaultValue={editing.categoryId} className="w-full rounded-lg border px-3 py-2 text-sm" required>
-                <option value="">—</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">{t("name")}</label>
-              <input name="name" defaultValue={editing.name} className="w-full rounded-lg border px-3 py-2 text-sm" required />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">{t("description")}</label>
-              <input name="description" defaultValue={editing.description ?? ""} className="w-full rounded-lg border px-3 py-2 text-sm" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">{t("price")}</label>
-                <input name="price" type="number" step="0.01" defaultValue={editing.price} className="w-full rounded-lg border px-3 py-2 text-sm" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t("displayOrder")}</label>
-                <input name="displayOrder" type="number" defaultValue={editing.displayOrder} className="w-full rounded-lg border px-3 py-2 text-sm" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">{t("imageUrl")}</label>
-              <input name="imageUrl" defaultValue={editing.imageUrl ?? ""} className="w-full rounded-lg border px-3 py-2 text-sm" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">{t("dietaryTags")}</label>
-              <input name="dietaryTags" defaultValue={(editing.dietaryTags ?? []).join(", ")} className="w-full rounded-lg border px-3 py-2 text-sm" placeholder="e.g. vegan, gluten-free" />
-            </div>
-
-            <label className="flex items-center gap-2 text-sm">
-              <input name="isAvailable" type="checkbox" defaultChecked={editing.isAvailable} />
-              {t("isAvailable")}
-            </label>
-
-            <div>
-              <div className="flex gap-1 mb-3 border-b">
-                {LOCALES.map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => setLocaleTab(l)}
-                    className={`px-3 py-1.5 text-sm rounded-t ${localeTab === l ? "bg-gray-100 font-medium" : "text-gray-500"}`}
-                  >
-                    {l.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-              {LOCALES.map((l) => (
-                <div key={l} className={localeTab === l ? "space-y-3" : "hidden"}>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t("name")} ({l})</label>
-                    <input name={`tr_name_${l}`} defaultValue={editing.translations?.find((tr) => tr.locale === l)?.name ?? ""} className="w-full rounded-lg border px-3 py-2 text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">{t("description")} ({l})</label>
-                    <input name={`tr_description_${l}`} defaultValue={editing.translations?.find((tr) => tr.locale === l)?.description ?? ""} className="w-full rounded-lg border px-3 py-2 text-sm" />
-                  </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <form onSubmit={save}>
+            <DialogHeader>
+              <DialogTitle>
+                {editing?.id ? t("edit") : t("create")} {t("items")}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{t("categories")}</Label>
+                  <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? "")}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  <Label>{t("price")}</Label>
+                  <Input name="price" type="number" step="0.01" defaultValue={editing?.price} required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("name")}</Label>
+                <Input name="name" defaultValue={editing?.name} required />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("description")}</Label>
+                <Input name="description" defaultValue={editing?.description ?? ""} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{t("displayOrder")}</Label>
+                  <Input name="displayOrder" type="number" defaultValue={editing?.displayOrder} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("imageUrl")}</Label>
+                  <Input name="imageUrl" defaultValue={editing?.imageUrl ?? ""} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("dietaryTags")}</Label>
+                <Input name="dietaryTags" defaultValue={(editing?.dietaryTags ?? []).join(", ")} placeholder="e.g. vegan, gluten-free" />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input name="isAvailable" type="checkbox" defaultChecked={editing?.isAvailable} />
+                {t("isAvailable")}
+              </label>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50">{t("cancel")}</button>
-              <button type="submit" className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">{t("save")}</button>
+              <div className="border-t pt-4">
+                <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">TRANSLATIONS</p>
+                <div className="space-y-4">
+                  {LOCALES.map((l) => (
+                    <div key={l} className="space-y-2 pl-3 border-l-2 border-primary/20">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary">
+                        {l}
+                      </span>
+                      <div className="space-y-2">
+                        <Input
+                          name={`tr_name_${l}`}
+                          defaultValue={editing?.translations?.find((tr) => tr.locale === l)?.name ?? ""}
+                          placeholder={`${t("name")} (${l})`}
+                        />
+                        <Input
+                          name={`tr_description_${l}`}
+                          defaultValue={editing?.translations?.find((tr) => tr.locale === l)?.description ?? ""}
+                          placeholder={`${t("description")} (${l})`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
+            <DialogFooter>
+              <Button type="submit">{t("save")}</Button>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
