@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import {
   ListTree,
   UtensilsCrossed,
+  Building2,
   LogOut,
 } from "lucide-react"
 import type { ReactNode } from "react"
@@ -13,9 +14,12 @@ import type { ReactNode } from "react"
 const views = ["items", "categories"] as const
 export type AdminView = (typeof views)[number]
 
-const viewIcons: Record<AdminView, ReactNode> = {
+export type ExtendedView = AdminView | "tenants"
+
+const viewIcons: Record<string, ReactNode> = {
   items: <UtensilsCrossed className="size-4" />,
   categories: <ListTree className="size-4" />,
+  tenants: <Building2 className="size-4" />,
 }
 
 export function AdminLayout({
@@ -23,12 +27,13 @@ export function AdminLayout({
   onNavigate,
   children,
 }: {
-  view: AdminView
-  onNavigate: (v: AdminView) => void
+  view: string
+  onNavigate: (v: ExtendedView) => void
   children: ReactNode
 }) {
   const t = useTranslations("admin")
   const { user, signOut } = useAuth()
+  const isSuper = user?.role === "SUPER_ADMIN"
 
   return (
     <div className="min-h-dvh flex">
@@ -54,6 +59,17 @@ export function AdminLayout({
               </Button>
             )
           })}
+          {isSuper && (
+            <Button
+              variant={view === "tenants" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => onNavigate("tenants")}
+              className="w-full justify-start gap-2.5 data-[slot=button]:text-sidebar-foreground/70"
+            >
+              <Building2 className="size-4" />
+              Tenants
+            </Button>
+          )}
         </nav>
         <div className="p-2 border-t border-sidebar-border">
           <Button
