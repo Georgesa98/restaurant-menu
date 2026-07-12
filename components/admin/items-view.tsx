@@ -50,6 +50,7 @@ export function ItemsView() {
   const [open, setOpen] = useState(false)
   const [categoryId, setCategoryId] = useState("")
   const [filterCategory, setFilterCategory] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
 
   const tenantId = user?.role === "SUPER_ADMIN" ? "" : user?.tenantId
 
@@ -65,9 +66,16 @@ export function ItemsView() {
   useEffect(() => { load() }, [])
 
   const filtered = useMemo(() => {
-    if (!filterCategory) return items
-    return items.filter((item) => item.categoryId === filterCategory)
-  }, [items, filterCategory])
+    let result = items
+    if (filterCategory) {
+      result = result.filter((item) => item.categoryId === filterCategory)
+    }
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter((item) => item.name.toLowerCase().includes(q))
+    }
+    return result
+  }, [items, filterCategory, search])
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -153,33 +161,41 @@ export function ItemsView() {
         </Button>
       </div>
 
-      {categories.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          <button
-            onClick={() => setFilterCategory(null)}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              filterCategory === null
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            All
-          </button>
-          {categories.map((c) => (
+      <div className="flex items-center gap-3 mb-4">
+        <Input
+          placeholder="Search items…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-64"
+        />
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
             <button
-              key={c.id}
-              onClick={() => setFilterCategory(c.id)}
+              onClick={() => setFilterCategory(null)}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                filterCategory === c.id
+                filterCategory === null
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
-              {c.name}
+              All
             </button>
-          ))}
-        </div>
-      )}
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setFilterCategory(c.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  filterCategory === c.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {filtered.map((item) => (
