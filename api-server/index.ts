@@ -6,6 +6,7 @@ import { auth } from "../lib/auth-server"
 import { categories } from "./routes/categories"
 import { items } from "./routes/items"
 import { translations } from "./routes/translations"
+import { tenants } from "./routes/tenants"
 
 const app = new Hono()
 
@@ -18,6 +19,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))
 app.route("/api/categories", categories)
 app.route("/api/items", items)
 app.route("/api/translations", translations)
+app.route("/api/tenants", tenants)
 
 app.post("/api/upload", (c) => c.json({ error: "Not implemented" }, 501))
 
