@@ -11,22 +11,27 @@ export async function generateStaticParams() {
     where: { isActive: true },
     select: { slug: true },
   })
-  return tenants.map((t) => ({ slug: t.slug }))
+
+  const locales = ["en", "ar"]
+  return locales.flatMap((locale) =>
+    tenants.map((t) => ({ locale, slug: t.slug }))
+  )
 }
 
 export default async function MenuRoute({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ locale: string; slug: string }>
 }) {
-  const { slug } = await params
+  const { locale, slug } = await params
 
   const data = await prisma.tenant.findUnique({
     where: { slug },
     include: {
       categories: {
         include: {
-          items: true,
+          items: { include: { translations: { where: { locale } } } },
+          translations: { where: { locale } },
         },
       },
     },
@@ -34,5 +39,5 @@ export default async function MenuRoute({
 
   if (!data) notFound()
 
-  return <MenuPage tenant={data} />
+  return <MenuPage tenant={data} locale={locale} />
 }
