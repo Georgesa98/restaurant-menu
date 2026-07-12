@@ -1,17 +1,9 @@
-import { PrismaPg } from "@prisma/adapter-pg"
-import { PrismaClient } from "@prisma/client"
 import { notFound } from "next/navigation"
 import { MenuPage } from "@/components/menu/menu-page"
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-const prisma = new PrismaClient({ adapter })
+import { getAllTenantSlugs, getTenantWithMenu } from "@/lib/queries"
 
 export async function generateStaticParams() {
-  const tenants = await prisma.tenant.findMany({
-    where: { isActive: true },
-    select: { slug: true },
-  })
-
+  const tenants = await getAllTenantSlugs()
   const locales = ["en", "ar"]
   return locales.flatMap((locale) =>
     tenants.map((t) => ({ locale, slug: t.slug }))
@@ -25,17 +17,7 @@ export default async function MenuRoute({
 }) {
   const { locale, slug } = await params
 
-  const data = await prisma.tenant.findUnique({
-    where: { slug },
-    include: {
-      categories: {
-        include: {
-          items: { include: { translations: { where: { locale } } } },
-          translations: { where: { locale } },
-        },
-      },
-    },
-  })
+  const data = await getTenantWithMenu(slug, locale)
 
   if (!data) notFound()
 
