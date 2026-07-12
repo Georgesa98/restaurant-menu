@@ -317,7 +317,7 @@ Create 1 super admin + 1 tenant admin per demo tenant via better-auth API.
 
 ---
 
-## Phase 3 — Admin Panel (Client-rendered) ⏳ *(in progress)*
+## Phase 3 — Admin Panel (Client-rendered) ✓ *(done)*
 
 ### 3.1 — UI overhaul: shadcn/ui
 
