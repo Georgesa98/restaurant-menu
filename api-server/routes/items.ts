@@ -90,6 +90,22 @@ items.delete("/:id", async (c) => {
   return c.json({ success: true })
 })
 
+items.patch("/reorder", async (c) => {
+  const body = await c.req.json()
+  const { items: reorderItems } = body as { items: { id: string; displayOrder: number }[] }
+
+  await prisma.$transaction(
+    reorderItems.map((item) =>
+      prisma.menuItem.update({
+        where: { id: item.id },
+        data: { displayOrder: item.displayOrder },
+      }),
+    ),
+  )
+
+  return c.json({ success: true })
+})
+
 items.patch("/:id/availability", async (c) => {
   const id = c.req.param("id")
   const body = await c.req.json()
