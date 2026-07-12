@@ -21,7 +21,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, GripVertical } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 type Item = {
   id: string
@@ -41,6 +55,71 @@ type Category = { id: string; name: string }
 
 const LOCALES = ["en", "ar"]
 
+function SortableCard({
+  item,
+  onEdit,
+  onRemove,
+  onToggleAvailability,
+  t,
+}: {
+  item: Item
+  onEdit: (i: Item) => void
+  onRemove: (id: string) => void
+  onToggleAvailability: (i: Item) => void
+  t: (key: string) => string
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative bg-card rounded-xl ring-1 ring-foreground/5 py-4 px-4 hover:ring-foreground/10 hover:shadow-md transition-all group"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none" aria-label="Drag to reorder">
+            <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
+          </button>
+          <button
+            onClick={() => onToggleAvailability(item)}
+            className={`size-2 rounded-full shrink-0 transition-colors ${
+              item.isAvailable ? "bg-amber" : "bg-muted-foreground/30"
+            }`}
+            title={item.isAvailable ? t("isAvailable") : "notAvailable"}
+          />
+        </div>
+        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+          {item.category?.name}
+        </span>
+      </div>
+      <p className="text-sm font-medium truncate mb-1">{item.name}</p>
+      {item.description && (
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>
+      )}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold tabular-nums">
+          ${Number(item.price).toFixed(2)}
+        </span>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="xs" onClick={() => onEdit(item)}>
+            <Pencil className="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="xs" onClick={() => onRemove(item.id)}>
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ItemsView() {
   const t = useTranslations("admin")
   const { user } = useAuth()
@@ -53,6 +132,10 @@ export function ItemsView() {
   const [search, setSearch] = useState("")
 
   const tenantId = user?.role === "SUPER_ADMIN" ? "" : user?.tenantId
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
 
   async function load() {
     const [itemRes, catRes] = await Promise.all([
@@ -76,6 +159,28 @@ export function ItemsView() {
     }
     return result
   }, [items, filterCategory, search])
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = filtered.findIndex((i) => i.id === active.id)
+    const newIndex = filtered.findIndex((i) => i.id === over.id)
+
+    const reordered = [...filtered]
+    const [moved] = reordered.splice(oldIndex, 1)
+    reordered.splice(newIndex, 0, moved)
+
+    const updated = reordered.map((i, idx) => ({ ...i, displayOrder: idx }))
+    setItems((prev) => {
+      const map = new Map(updated.map((i) => [i.id, i]))
+      return prev.map((i) => map.get(i.id) ?? i)
+    })
+
+    await api.patch("/api/items/reorder", {
+      items: updated.map((i) => ({ id: i.id, displayOrder: i.displayOrder })),
+    })
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -197,44 +302,22 @@ export function ItemsView() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="relative bg-card rounded-xl ring-1 ring-foreground/5 py-4 px-4 hover:ring-foreground/10 hover:shadow-md transition-all group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <button
-                onClick={() => toggleAvailability(item)}
-                className={`size-2 rounded-full shrink-0 transition-colors ${
-                  item.isAvailable ? "bg-amber" : "bg-muted-foreground/30"
-                }`}
-                title={item.isAvailable ? t("isAvailable") : "notAvailable"}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={filtered.map((i) => i.id)} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filtered.map((item) => (
+              <SortableCard
+                key={item.id}
+                item={item}
+                onEdit={openEdit}
+                onRemove={remove}
+                onToggleAvailability={toggleAvailability}
+                t={t}
               />
-              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                {item.category?.name}
-              </span>
-            </div>
-            <p className="text-sm font-medium truncate mb-1">{item.name}</p>
-            {item.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold tabular-nums">
-                ${Number(item.price).toFixed(2)}
-              </span>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="xs" onClick={() => openEdit(item)}>
-                  <Pencil className="size-3.5" />
-                </Button>
-                <Button variant="ghost" size="xs" onClick={() => remove(item.id)}>
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-xl">
