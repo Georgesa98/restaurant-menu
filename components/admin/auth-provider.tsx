@@ -53,7 +53,7 @@ export function AuthProvider({ children, locale }: { children: ReactNode; locale
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full" />
       </div>
     )
   }
