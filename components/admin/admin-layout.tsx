@@ -2,10 +2,21 @@
 
 import { useTranslations } from "next-intl"
 import { useAuth } from "./auth-provider"
+import { Button } from "@/components/ui/button"
+import {
+  ListTree,
+  UtensilsCrossed,
+  LogOut,
+} from "lucide-react"
 import type { ReactNode } from "react"
 
-const views = ["dashboard", "categories", "items", "settings"] as const
+const views = ["items", "categories"] as const
 export type AdminView = (typeof views)[number]
+
+const viewIcons: Record<AdminView, ReactNode> = {
+  items: <UtensilsCrossed className="size-4" />,
+  categories: <ListTree className="size-4" />,
+}
 
 export function AdminLayout({
   view,
@@ -21,34 +32,42 @@ export function AdminLayout({
 
   return (
     <div className="min-h-dvh flex">
-      <aside className="w-56 bg-gray-900 text-white flex flex-col shrink-0">
-        <div className="p-4 border-b border-gray-700">
-          <h2 className="font-bold text-sm">MenuHost Admin</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{user?.email}</p>
+      <aside className="w-56 bg-sidebar text-sidebar-foreground flex flex-col shrink-0">
+        <div className="h-1 shrink-0 bg-amber" />
+        <div className="px-4 pt-4 pb-3">
+          <h2 className="font-bold text-sm tracking-wide">MenuHost</h2>
+          <p className="text-xs text-sidebar-foreground/50 mt-0.5 truncate">{user?.email}</p>
         </div>
-        <nav className="flex-1 p-2 space-y-1">
-          {views.map((v) => (
-            <button
-              key={v}
-              onClick={() => onNavigate(v)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                view === v ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-800"
-              }`}
-            >
-              {t(v)}
-            </button>
-          ))}
+        <nav className="flex-1 px-2 space-y-0.5">
+          {views.map((v) => {
+            const Icon = viewIcons[v]
+            return (
+              <Button
+                key={v}
+                variant={view === v ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => onNavigate(v)}
+                className="w-full justify-start gap-2.5 data-[slot=button]:text-sidebar-foreground/70"
+              >
+                {Icon}
+                {t(v)}
+              </Button>
+            )
+          })}
         </nav>
-        <div className="p-2 border-t border-gray-700">
-          <button
+        <div className="p-2 border-t border-sidebar-border">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={signOut}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 transition-colors"
+            className="w-full justify-start gap-2.5 text-sidebar-foreground/40 hover:text-sidebar-foreground"
           >
+            <LogOut className="size-4" />
             {t("logout")}
-          </button>
+          </Button>
         </div>
       </aside>
-      <main className="flex-1 bg-gray-50 p-6 overflow-auto">{children}</main>
+      <main className="flex-1 p-6 lg:p-8 overflow-auto">{children}</main>
     </div>
   )
 }
