@@ -21,7 +21,7 @@ export default function AdminLoginPage({ params: paramsPromise }: { params: Prom
     try {
       const res = await api.post("/api/auth/sign-in/email", { email, password })
       if (res.data.token) {
-        router.push("/admin")
+        router.push(`/${locale}/admin`)
       }
     } catch {
       setError(t("invalidCredentials"))

@@ -1,6 +1,12 @@
 # Implementation Plan
 
 ## Phase 0: Foundation ✓ *(done)*
+## Phase 1: Public Menu + Custom Domain Routing + Theme System ✓ *(done)*
+## Phase 1.5: i18n ✓ *(done)*
+## Phase 2: API Server (Hono + better-auth) ✓ *(done)*
+## Phase 3: Admin Panel + shadcn/ui ⏳ *(in progress)*
+## Phase 4: Super Admin Panel ⏳ *(pending)*
+## Phase 5: Deployment ⏳ *(pending)*
 
 - Next.js 16 + TypeScript + Tailwind v4 + Prisma 7 + PostgreSQL
 - better-auth for auth (email/password, session management)
@@ -51,7 +57,7 @@ The `name`/`description` on `Category`/`MenuItem` serve as the fallback (English
 
 ---
 
-## Phase 1: Public Menu + Custom Domain Routing + Theme System ✓ *(done)*
+## Phase 1 — Public Menu + Custom Domain Routing + Theme System
 
 ### 1.1 — Domain-based routing for custom domains
 
@@ -115,7 +121,7 @@ Build passes, themes correct, zero client JS on public pages, domain redirect wo
 
 ---
 
-## Phase 1.5: i18n — Internationalization
+## Phase 1.5 — i18n (Internationalization)
 
 ### Overview
 
@@ -237,7 +243,7 @@ out/
 
 ---
 
-## Phase 2: API Server (Hono + better-auth)
+## Phase 2 — API Server (Hono + better-auth)
 
 ### 2.1 — Create `api-server/`
 
@@ -311,9 +317,24 @@ Create 1 super admin + 1 tenant admin per demo tenant via better-auth API.
 
 ---
 
-## Phase 3: Admin Panel (Client-rendered)
+## Phase 3 — Admin Panel (Client-rendered) ⏳ *(in progress)*
 
-### 3.1 — better-auth client
+### 3.1 — UI overhaul: shadcn/ui
+
+Replace raw Tailwind inputs/buttons/modals with shadcn/ui components for a polished admin experience.
+
+```bash
+pnpm dlx shadcn@latest init     # configure base styles
+pnpm dlx shadcn@latest add button card input label select dialog tabs
+```
+
+Components will be ported to use shadcn primitives:
+- Login form → `Card` + `Input` + `Button`
+- Sidebar → `Button` variants
+- Category/item modals → `Dialog` + `Tabs` (locale switching)
+- Settings → `Card` + `Input`
+
+### 3.2 — better-auth client
 
 ```ts
 import { createAuthClient } from "better-auth/client"
