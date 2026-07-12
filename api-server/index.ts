@@ -9,7 +9,10 @@ import { translations } from "./routes/translations"
 
 const app = new Hono()
 
-app.use("/api/*", cors({ origin: "*", credentials: true }))
+app.use("/api/*", cors({
+  origin: (origin) => origin,
+  credentials: true,
+}))
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))
 
 app.route("/api/categories", categories)
