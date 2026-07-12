@@ -1,0 +1,24 @@
+{
+  "menu": {
+    "title": "Menu",
+    "loading": "Loading menu...",
+    "noItems": "No items available",
+    "viewAll": "View full menu"
+  },
+  "nav": {
+    "home": "Menu",
+    "language": "Language",
+    "switchToArabic": "العربية",
+    "switchToEnglish": "English"
+  },
+  "category": {
+    "all": "All"
+  },
+  "item": {
+    "price": "Price",
+    "notAvailable": "Currently unavailable"
+  },
+  "common": {
+    "poweredBy": "Powered by MenuHost"
+  }
+}
