@@ -12,11 +12,23 @@ async function main() {
     create: {
       name: "Trattoria Roma",
       slug: "trattoria-roma",
+      domain: "luigispizzeria.com",
       primaryColor: "#c0392b",
       secondaryColor: "#2c3e50",
       accentColor: "#f39c12",
       backgroundColor: "#fef9f0",
-      fontFamily: "Georgia, serif",
+      surfaceColor: "#ffffff",
+      textColor: "#1a1a2e",
+      textMuted: "#64748b",
+      headingFont: "'Playfair Display', Georgia, serif",
+      bodyFont: "'Inter', system-ui, sans-serif",
+      borderRadiusSm: "4px",
+      borderRadiusMd: "8px",
+      borderRadiusLg: "16px",
+      shadow: "0 2px 12px rgba(0,0,0,0.08)",
+      cardStyle: "elevated",
+      menuLayout: "single",
+      spacing: "comfortable",
       description: "Authentic Italian cuisine since 1982",
       address: "42 Via Roma, Florence",
       phone: "+39 055 1234567",
@@ -30,11 +42,23 @@ async function main() {
     create: {
       name: "Sakura Sushi Bar",
       slug: "sakura-sushi",
+      domain: "sakurasushi.com",
       primaryColor: "#e91e63",
       secondaryColor: "#263238",
       accentColor: "#ffb300",
       backgroundColor: "#fafafa",
-      fontFamily: "Inter, system-ui, sans-serif",
+      surfaceColor: "#ffffff",
+      textColor: "#1a1a2e",
+      textMuted: "#78909c",
+      headingFont: "'DM Serif Display', Georgia, serif",
+      bodyFont: "'Inter', system-ui, sans-serif",
+      borderRadiusSm: "2px",
+      borderRadiusMd: "4px",
+      borderRadiusLg: "8px",
+      shadow: "0 1px 4px rgba(0,0,0,0.06)",
+      cardStyle: "bordered",
+      menuLayout: "two-column",
+      spacing: "compact",
       description: "Fresh sushi & Japanese delicacies",
       address: "15 Cherry Blossom Lane, Tokyo",
       phone: "+81 3 1234 5678",
@@ -42,13 +66,10 @@ async function main() {
     },
   })
 
+  // ── Categories + Items for Trattoria Roma ──
   await prisma.category.create({
     data: {
-      tenantId: trattoria.id,
-      name: "Antipasti",
-      slug: "antipasti",
-      description: "To share",
-      displayOrder: 0,
+      tenantId: trattoria.id, name: "Antipasti", slug: "antipasti", description: "To share", displayOrder: 0,
       items: {
         create: [
           { tenantId: trattoria.id, name: "Bruschetta al Pomodoro", description: "Toasted sourdough, ripe tomatoes, basil, extra virgin olive oil", price: 8.5, displayOrder: 0, dietaryTags: ["vegetarian", "vegan"] },
@@ -61,10 +82,7 @@ async function main() {
 
   await prisma.category.create({
     data: {
-      tenantId: trattoria.id,
-      name: "Pasta",
-      slug: "pasta",
-      displayOrder: 1,
+      tenantId: trattoria.id, name: "Pasta", slug: "pasta", displayOrder: 1,
       items: {
         create: [
           { tenantId: trattoria.id, name: "Spaghetti Carbonara", description: "Guanciale, egg yolk, pecorino, black pepper", price: 14.0, displayOrder: 0, dietaryTags: [] },
@@ -77,10 +95,7 @@ async function main() {
 
   await prisma.category.create({
     data: {
-      tenantId: trattoria.id,
-      name: "Dolci",
-      slug: "dolci",
-      displayOrder: 2,
+      tenantId: trattoria.id, name: "Dolci", slug: "dolci", displayOrder: 2,
       items: {
         create: [
           { tenantId: trattoria.id, name: "Tiramisù", description: "Classic coffee and mascarpone layered dessert", price: 8.0, displayOrder: 0, dietaryTags: ["vegetarian"] },
@@ -90,12 +105,10 @@ async function main() {
     },
   })
 
+  // ── Categories + Items for Sakura Sushi ──
   await prisma.category.create({
     data: {
-      tenantId: sushiBar.id,
-      name: "Appetizers",
-      slug: "appetizers",
-      displayOrder: 0,
+      tenantId: sushiBar.id, name: "Appetizers", slug: "appetizers", displayOrder: 0,
       items: {
         create: [
           { tenantId: sushiBar.id, name: "Edamame", description: "Steamed soy beans with sea salt", price: 5.0, displayOrder: 0, dietaryTags: ["vegetarian", "vegan", "gluten-free"] },
@@ -108,10 +121,7 @@ async function main() {
 
   await prisma.category.create({
     data: {
-      tenantId: sushiBar.id,
-      name: "Sushi",
-      slug: "sushi",
-      displayOrder: 1,
+      tenantId: sushiBar.id, name: "Sushi", slug: "sushi", displayOrder: 1,
       items: {
         create: [
           { tenantId: sushiBar.id, name: "Salmon Nigiri (2 pcs)", description: "Fresh Atlantic salmon on hand-pressed rice", price: 8.0, displayOrder: 0, dietaryTags: ["gluten-free"] },
@@ -124,10 +134,7 @@ async function main() {
 
   await prisma.category.create({
     data: {
-      tenantId: sushiBar.id,
-      name: "Desserts",
-      slug: "desserts",
-      displayOrder: 2,
+      tenantId: sushiBar.id, name: "Desserts", slug: "desserts", displayOrder: 2,
       items: {
         create: [
           { tenantId: sushiBar.id, name: "Mochi Ice Cream (3 pcs)", description: "Assorted flavors: matcha, mango, strawberry", price: 6.5, displayOrder: 0, dietaryTags: ["vegetarian", "gluten-free"] },
@@ -137,7 +144,7 @@ async function main() {
     },
   })
 
-  console.log("Seeded 2 tenants with 6 categories and 16 menu items")
+  console.log("Seeded 2 tenants with expanded theme tokens, 6 categories, 16 items")
 }
 
 main()

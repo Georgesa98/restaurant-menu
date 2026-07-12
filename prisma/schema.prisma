@@ -109,12 +109,28 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // ── Design Tokens (17 fields) ──
   primaryColor    String @default("#e74c3c")
   secondaryColor  String @default("#2c3e50")
   accentColor     String @default("#f39c12")
   backgroundColor String @default("#fdf5e6")
-  fontFamily      String @default("Inter, system-ui, sans-serif")
-  borderRadius    String @default("8px")
+  surfaceColor    String @default("#ffffff")
+  textColor       String @default("#1a1a2e")
+  textMuted       String @default("#64748b")
+  headingFont     String @default("Georgia, serif")
+  bodyFont        String @default("Inter, system-ui, sans-serif")
+
+  borderRadiusSm  String @default("4px")
+  borderRadiusMd  String @default("8px")
+  borderRadiusLg  String @default("16px")
+
+  shadow          String @default("0 2px 8px rgba(0,0,0,0.08)")
+
+  cardStyle       String @default("elevated") // elevated | flat | bordered
+  menuLayout      String @default("single")   // single | two-column
+  spacing         String @default("comfortable") // compact | comfortable | spacious
+
+  customCss       String?
 
   logoUrl     String?
   coverUrl    String?
