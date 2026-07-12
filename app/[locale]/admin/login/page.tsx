@@ -4,6 +4,11 @@ import { useState, FormEvent, use } from "react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { api } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { UtensilsCrossed } from "lucide-react"
 
 export default function AdminLoginPage({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
   const { locale } = use(paramsPromise)
@@ -31,44 +36,41 @@ export default function AdminLoginPage({ params: paramsPromise }: { params: Prom
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gray-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white rounded-xl shadow-sm border p-6 space-y-4"
-      >
-        <h1 className="text-xl font-bold text-center">{t("login")}</h1>
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
-        )}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("email")}</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-            autoFocus
-          />
+    <div className="min-h-dvh flex items-center justify-center px-4" style={{ background: "#141514" }}>
+      <div className="w-full max-w-sm space-y-6">
+        <div className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center size-12 rounded-xl bg-primary text-primary-foreground mb-2">
+            <UtensilsCrossed className="size-6" />
+          </div>
+          <h1 className="text-xl font-bold text-white tracking-wide">MenuHost</h1>
+          <p className="text-sm text-white/40">Restaurant menu management</p>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t("password")}</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-blue-600 text-white py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? t("signingIn") : t("login")}
-        </button>
-      </form>
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-center text-base">{t("login")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">{t("email")}</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">{t("password")}</Label>
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? t("signingIn") : t("login")}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
