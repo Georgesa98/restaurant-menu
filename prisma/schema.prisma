@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── better-auth models ─────────────────────────────────────
+// --- better-auth models ---
 
 model User {
   id               String      @id
@@ -89,7 +89,7 @@ model TwoFactor {
   @@map("twofactor")
 }
 
-// ─── Enums ───────────────────────────────────────────────────
+// --- Enums ---
 
 enum TenantPlan {
   FREE
@@ -97,7 +97,7 @@ enum TenantPlan {
   PRO
 }
 
-// ─── App models ─────────────────────────────────────────────
+// --- App models ---
 
 model Tenant {
   id        String   @id @default(uuid()) @db.Uuid
@@ -109,7 +109,7 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // ── Design Tokens (17 fields) ──
+  // Design Tokens (17 fields)
   primaryColor    String @default("#e74c3c")
   secondaryColor  String @default("#2c3e50")
   accentColor     String @default("#f39c12")
@@ -126,9 +126,9 @@ model Tenant {
 
   shadow          String @default("0 2px 8px rgba(0,0,0,0.08)")
 
-  cardStyle       String @default("elevated") // elevated | flat | bordered
-  menuLayout      String @default("single")   // single | two-column
-  spacing         String @default("comfortable") // compact | comfortable | spacious
+  cardStyle       String @default("elevated")
+  menuLayout      String @default("single")
+  spacing         String @default("comfortable")
 
   customCss       String?
 
@@ -139,6 +139,9 @@ model Tenant {
   phone       String?
   instagram   String?
   website     String?
+
+  defaultLocale    String   @default("en")
+  availableLocales String[] @default(["en"])
 
   categories Category[]
   items      MenuItem[]
@@ -157,8 +160,9 @@ model Category {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tenant Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items  MenuItem[]
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items        MenuItem[]
+  translations CategoryTranslation[]
 
   @@unique([tenantId, slug])
   @@map("categories")
@@ -178,9 +182,36 @@ model MenuItem {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category     Category             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  translations MenuItemTranslation[]
 
   @@index([tenantId, categoryId])
   @@map("menu_items")
+}
+
+model CategoryTranslation {
+  id          String   @id @default(uuid()) @db.Uuid
+  categoryId  String   @db.Uuid
+  locale      String
+  name        String
+  description String?
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+  @@map("category_translations")
+}
+
+model MenuItemTranslation {
+  id          String   @id @default(uuid()) @db.Uuid
+  menuItemId  String   @db.Uuid
+  locale      String
+  name        String
+  description String?
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, locale])
+  @@map("menu_item_translations")
 }
