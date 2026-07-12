@@ -1,8 +1,59 @@
-import { Prisma } from "@prisma/client"
+type Translation = { name: string; description: string | null }
+type WithTranslations<T> = T & { translations: Translation[] }
 
-type TenantWithMenu = Prisma.TenantGetPayload<{
-  include: { categories: { include: { items: true } } }
-}>
+type TenantData = {
+  id: string
+  name: string
+  slug: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor: string
+  surfaceColor: string
+  textColor: string
+  textMuted: string
+  headingFont: string
+  bodyFont: string
+  borderRadiusSm: string
+  borderRadiusMd: string
+  borderRadiusLg: string
+  shadow: string
+  cardStyle: string
+  menuLayout: string
+  spacing: string
+  customCss: string | null
+  logoUrl: string | null
+  description: string | null
+  address: string | null
+  phone: string | null
+  instagram: string | null
+  categories: (WithTranslations<{
+    id: string
+    name: string
+    slug: string
+    description: string | null
+    displayOrder: number
+    isActive: boolean
+    items: WithTranslations<{
+      id: string
+      name: string
+      description: string | null
+      price: { toString: () => string }
+      imageUrl: string | null
+      isAvailable: boolean
+      displayOrder: number
+      dietaryTags: string[]
+    }>[]
+  }>)[]
+}
+
+function t(item: WithTranslations<{ name: string; description: string | null }>): { name: string; description: string | null } {
+  const tr = item.translations?.[0]
+  return {
+    name: tr?.name ?? item.name,
+    description: tr?.description ?? item.description,
+  }
+}
 
 function spaceToPx(space: string): string {
   if (space === "compact") return "12px"
@@ -10,21 +61,18 @@ function spaceToPx(space: string): string {
   return "16px"
 }
 
-function cardStyleCss(style: string): string {
-  if (style === "flat") return `background: var(--surface);`
-  if (style === "bordered") return `background: var(--surface); border: 1px solid color-mix(in srgb, var(--text-muted) 20%, transparent);`
-  return `background: var(--surface); box-shadow: var(--shadow);`
-}
-
 export function MenuPage({
   tenant,
+  locale,
   highlightCategory,
 }: {
-  tenant: TenantWithMenu
+  tenant: TenantData
+  locale: string
   highlightCategory?: string
 }) {
   const space = spaceToPx(tenant.spacing)
   const gridCols = tenant.menuLayout === "two-column" ? "repeat(2, 1fr)" : "1fr"
+  const isRtl = locale === "ar"
 
   return (
     <>
@@ -67,7 +115,12 @@ export function MenuPage({
           className="mx-auto px-4 py-8"
           style={{ maxWidth: tenant.menuLayout === "two-column" ? "900px" : "640px" }}
         >
-          <header className="text-center mb-10">
+          {/* Language Switcher */}
+          <div className={`mb-6 ${isRtl ? "text-left" : "text-right"}`}>
+            <LanguageSwitcher locale={locale} slug={tenant.slug} />
+          </div>
+
+          <header className={`text-center mb-10 ${isRtl ? "rtl" : ""}`}>
             {tenant.logoUrl && (
               <img
                 src={tenant.logoUrl}
@@ -102,6 +155,7 @@ export function MenuPage({
               .filter((c) => c.isActive)
               .sort((a, b) => a.displayOrder - b.displayOrder)
               .map((category) => {
+                const catTrans = t(category)
                 const items = category.items
                   .filter((i) => i.isAvailable)
                   .sort((a, b) => a.displayOrder - b.displayOrder)
@@ -115,18 +169,18 @@ export function MenuPage({
                     }}
                   >
                     <div
-                      className="flex items-center gap-3 mb-4 pb-2"
+                      className={`flex items-center gap-3 mb-4 pb-2 ${isRtl ? "flex-row-reverse" : ""}`}
                       style={{ borderBottom: `2px solid ${tenant.accentColor}` }}
                     >
                       <h2
                         className="text-xl font-semibold"
                         style={{ fontFamily: tenant.headingFont, color: tenant.secondaryColor }}
                       >
-                        {category.name}
+                        {catTrans.name}
                       </h2>
-                      {category.description && (
+                      {catTrans.description && (
                         <span className="text-sm" style={{ color: tenant.textMuted }}>
-                          — {category.description}
+                          — {catTrans.description}
                         </span>
                       )}
                     </div>
@@ -139,56 +193,59 @@ export function MenuPage({
                         gap: space,
                       }}
                     >
-                      {items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="menu-card flex gap-3 p-4"
-                        >
-                          {item.imageUrl && (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-20 h-20 object-cover shrink-0"
-                              style={{ borderRadius: tenant.borderRadiusSm }}
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-medium">{item.name}</h3>
-                              <span
-                                className="font-bold whitespace-nowrap shrink-0"
-                                style={{ color: tenant.primaryColor }}
-                              >
-                                ${Number(item.price).toFixed(2)}
-                              </span>
-                            </div>
-                            {item.description && (
-                              <p
-                                className="text-sm mt-1"
-                                style={{ color: tenant.textMuted }}
-                              >
-                                {item.description}
-                              </p>
+                      {items.map((item) => {
+                        const itemTrans = t(item)
+                        return (
+                          <div
+                            key={item.id}
+                            className="menu-card flex gap-3 p-4"
+                          >
+                            {item.imageUrl && (
+                              <img
+                                src={item.imageUrl}
+                                alt={itemTrans.name}
+                                className={`w-20 h-20 object-cover shrink-0 ${isRtl ? "order-last" : ""}`}
+                                style={{ borderRadius: tenant.borderRadiusSm }}
+                              />
                             )}
-                            {item.dietaryTags.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {item.dietaryTags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="text-xs px-2 py-0.5 rounded-full"
-                                    style={{
-                                      background: tenant.accentColor + "20",
-                                      color: tenant.accentColor,
-                                    }}
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
+                            <div className="flex-1 min-w-0">
+                              <div className={`flex items-start justify-between gap-2 ${isRtl ? "flex-row-reverse" : ""}`}>
+                                <h3 className="font-medium">{itemTrans.name}</h3>
+                                <span
+                                  className="font-bold whitespace-nowrap shrink-0"
+                                  style={{ color: tenant.primaryColor }}
+                                >
+                                  ${Number(item.price).toFixed(2)}
+                                </span>
                               </div>
-                            )}
+                              {itemTrans.description && (
+                                <p
+                                  className="text-sm mt-1"
+                                  style={{ color: tenant.textMuted }}
+                                >
+                                  {itemTrans.description}
+                                </p>
+                              )}
+                              {item.dietaryTags.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  {item.dietaryTags.map((tag) => (
+                                    <span
+                                      key={tag}
+                                      className="text-xs px-2 py-0.5 rounded-full"
+                                      style={{
+                                        background: tenant.accentColor + "20",
+                                        color: tenant.accentColor,
+                                      }}
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </section>
                 )
@@ -211,5 +268,23 @@ export function MenuPage({
         </div>
       </main>
     </>
+  )
+}
+
+function LanguageSwitcher({ locale, slug }: { locale: string; slug: string }) {
+  const otherLocale = locale === "ar" ? "en" : "ar"
+  const label = otherLocale === "ar" ? "العربية" : "English"
+
+  return (
+    <a
+      href={`/${otherLocale}/${slug}/menu`}
+      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-[var(--radius-sm)] transition-colors hover:opacity-80"
+      style={{
+        background: "color-mix(in srgb, var(--text-muted) 10%, transparent)",
+        color: "var(--text-muted)",
+      }}
+    >
+      {label}
+    </a>
   )
 }
