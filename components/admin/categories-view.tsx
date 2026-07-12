@@ -14,7 +14,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, GripVertical } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 type Category = {
   id: string
@@ -28,6 +42,55 @@ type Category = {
 
 const LOCALES = ["en", "ar"]
 
+function SortableCard({
+  cat,
+  onEdit,
+  onRemove,
+}: {
+  cat: Category
+  onEdit: (c: Category) => void
+  onRemove: (id: string) => void
+}) {
+  const t = useTranslations("admin")
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative bg-card rounded-xl ring-1 ring-foreground/5 py-4 px-4 hover:ring-foreground/10 transition-shadow group"
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none" aria-label="Drag to reorder">
+          <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
+        </button>
+        <span className="size-2 rounded-full bg-primary/60 shrink-0" />
+        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+          /{cat.slug}
+        </span>
+      </div>
+      <p className="text-sm font-medium mb-1">{cat.name}</p>
+      {cat.description && (
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{cat.description}</p>
+      )}
+      <div className="flex items-center gap-1 mt-auto pt-1">
+        <Button variant="ghost" size="xs" onClick={() => onEdit(cat)}>
+          <Pencil className="size-3.5" />
+        </Button>
+        <Button variant="ghost" size="xs" onClick={() => onRemove(cat.id)}>
+          <Trash2 className="size-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function CategoriesView() {
   const t = useTranslations("admin")
   const { user } = useAuth()
@@ -37,12 +100,35 @@ export function CategoriesView() {
 
   const tenantId = user?.role === "SUPER_ADMIN" ? "" : user?.tenantId
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  )
+
   async function load() {
     const res = await api.get("/api/categories", { params: { tenantId } })
     setCats(res.data)
   }
 
   useEffect(() => { load() }, [])
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = cats.findIndex((c) => c.id === active.id)
+    const newIndex = cats.findIndex((c) => c.id === over.id)
+
+    const reordered = [...cats]
+    const [moved] = reordered.splice(oldIndex, 1)
+    reordered.splice(newIndex, 0, moved)
+
+    const updated = reordered.map((c, i) => ({ ...c, displayOrder: i }))
+    setCats(updated)
+
+    await api.patch("/api/categories/reorder", {
+      items: updated.map((c) => ({ id: c.id, displayOrder: c.displayOrder })),
+    })
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -117,33 +203,15 @@ export function CategoriesView() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {cats.map((cat) => (
-          <div
-            key={cat.id}
-            className="relative bg-card rounded-xl ring-1 ring-foreground/5 py-4 px-4 hover:ring-foreground/10 hover:shadow-md transition-all group"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="size-2 rounded-full bg-primary/60 shrink-0" />
-              <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                /{cat.slug}
-              </span>
-            </div>
-            <p className="text-sm font-medium mb-1">{cat.name}</p>
-            {cat.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{cat.description}</p>
-            )}
-            <div className="flex items-center gap-1 mt-auto pt-1">
-              <Button variant="ghost" size="xs" onClick={() => openEdit(cat)}>
-                <Pencil className="size-3.5" />
-              </Button>
-              <Button variant="ghost" size="xs" onClick={() => remove(cat.id)}>
-                <Trash2 className="size-3.5" />
-              </Button>
-            </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={cats.map((c) => c.id)} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {cats.map((cat) => (
+              <SortableCard key={cat.id} cat={cat} onEdit={openEdit} onRemove={remove} />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
