@@ -73,6 +73,22 @@ categories.put("/:id", async (c) => {
   return c.json(cat)
 })
 
+categories.patch("/reorder", async (c) => {
+  const body = await c.req.json()
+  const { items } = body as { items: { id: string; displayOrder: number }[] }
+
+  await prisma.$transaction(
+    items.map((item) =>
+      prisma.category.update({
+        where: { id: item.id },
+        data: { displayOrder: item.displayOrder },
+      }),
+    ),
+  )
+
+  return c.json({ success: true })
+})
+
 categories.delete("/:id", async (c) => {
   const id = c.req.param("id")
   await prisma.category.delete({ where: { id } })
