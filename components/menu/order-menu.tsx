@@ -1,63 +1,64 @@
-"use client"
+'use client';
 
-import { useState, useMemo } from "react"
-import type { TenantData, WithTranslations } from "@/lib/types"
-import { LanguageSwitcher } from "./language-switcher"
+import { useState, useMemo } from 'react';
+import type { TenantData, WithTranslations } from '@/lib/types';
+import { LanguageSwitcher } from './language-switcher';
 
-function t(item: WithTranslations<{ name: string; description: string | null }>): { name: string; description: string | null } {
-  const tr = item.translations?.[0]
+function t(item: WithTranslations<{ name: string; description: string | null }>): {
+  name: string;
+  description: string | null;
+} {
+  const tr = item.translations?.[0];
   return {
     name: tr?.name ?? item.name,
     description: tr?.description ?? item.description,
-  }
+  };
 }
 
 function spaceToPx(space: string): string {
-  if (space === "compact") return "12px"
-  if (space === "spacious") return "24px"
-  return "16px"
+  if (space === 'compact') return '12px';
+  if (space === 'spacious') return '24px';
+  return '16px';
 }
 
 function formatPrice(price: number, locale: string): string {
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(price)
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(price);
 }
 
 export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: string }) {
-  const [quantities, setQuantities] = useState<Map<string, number>>(new Map())
+  const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
 
-  const space = spaceToPx(tenant.spacing)
-  const gridCols = tenant.menuLayout === "two-column" ? "repeat(2, 1fr)" : "1fr"
-  const isRtl = locale === "ar"
+  const space = spaceToPx(tenant.spacing);
+  const gridCols = tenant.menuLayout === 'two-column' ? 'repeat(2, 1fr)' : '1fr';
+  const isRtl = locale === 'ar';
 
   const totalItems = useMemo(() => {
-    let count = 0
-    for (const q of quantities.values()) count += q
-    return count
-  }, [quantities])
+    let count = 0;
+    for (const q of quantities.values()) count += q;
+    return count;
+  }, [quantities]);
 
   const totalPrice = useMemo(() => {
-    let total = 0
+    let total = 0;
     for (const [id, q] of quantities) {
-      const item = tenant.categories
-        .flatMap((c) => c.items)
-        .find((i) => i.id === id)
-      if (item) total += Number(item.price) * q
+      const item = tenant.categories.flatMap((c) => c.items).find((i) => i.id === id);
+      if (item) total += Number(item.price) * q;
     }
-    return total
-  }, [quantities, tenant.categories])
+    return total;
+  }, [quantities, tenant.categories]);
 
   function setQuantity(id: string, delta: number) {
     setQuantities((prev) => {
-      const next = new Map(prev)
-      const current = next.get(id) ?? 0
-      const updated = current + delta
-      if (updated <= 0) next.delete(id)
-      else next.set(id, updated)
-      return next
-    })
+      const next = new Map(prev);
+      const current = next.get(id) ?? 0;
+      const updated = current + delta;
+      if (updated <= 0) next.delete(id);
+      else next.set(id, updated);
+      return next;
+    });
   }
 
   return (
@@ -81,12 +82,14 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           --menu-grid: ${gridCols};
           --space: ${space};
         }
-        ${tenant.cardStyle === "bordered"
-          ? `.menu-card { background: var(--surface); border: 1px solid color-mix(in srgb, var(--text-muted) 20%, transparent); border-radius: var(--radius-md); }`
-          : tenant.cardStyle === "flat"
-          ? `.menu-card { background: var(--surface); border-radius: var(--radius-md); }`
-          : `.menu-card { background: var(--surface); border-radius: var(--radius-md); box-shadow: var(--shadow); }`}
-        ${tenant.customCss ?? ""}
+        ${
+          tenant.cardStyle === 'bordered'
+            ? `.menu-card { background: var(--surface); border: 1px solid color-mix(in srgb, var(--text-muted) 20%, transparent); border-radius: var(--radius-md); }`
+            : tenant.cardStyle === 'flat'
+              ? `.menu-card { background: var(--surface); border-radius: var(--radius-md); }`
+              : `.menu-card { background: var(--surface); border-radius: var(--radius-md); box-shadow: var(--shadow); }`
+        }
+        ${tenant.customCss ?? ''}
       `}</style>
 
       <main
@@ -103,41 +106,32 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
             className="sticky top-0 z-10 py-3 px-4"
             style={{
               background: tenant.primaryColor,
-              color: "#fff",
+              color: '#fff',
             }}
           >
-            <div className="mx-auto flex items-center justify-between" style={{ maxWidth: tenant.menuLayout === "two-column" ? "900px" : "640px" }}>
+            <div
+              className="mx-auto flex items-center justify-between"
+              style={{ maxWidth: tenant.menuLayout === 'two-column' ? '900px' : '640px' }}
+            >
               <span className="text-sm font-medium">
-                {totalItems} item{totalItems !== 1 ? "s" : ""}
+                {totalItems} item{totalItems !== 1 ? 's' : ''}
               </span>
-              <span className="text-sm font-bold">
-                {formatPrice(totalPrice, locale)}
-              </span>
+              <span className="text-sm font-bold">{formatPrice(totalPrice, locale)}</span>
             </div>
           </div>
         )}
 
-        <div
-          className="mx-auto px-4 py-8"
-          style={{ maxWidth: tenant.menuLayout === "two-column" ? "900px" : "640px" }}
-        >
+        <div className="mx-auto px-4 py-8" style={{ maxWidth: tenant.menuLayout === 'two-column' ? '900px' : '640px' }}>
           {/* Language Switcher */}
-          <div className={`mb-6 ${isRtl ? "text-left" : "text-right"}`}>
+          <div className={`mb-6 ${isRtl ? 'text-left' : 'text-right'}`}>
             <LanguageSwitcher locale={locale} slug={tenant.slug} />
           </div>
 
-          <header className={`text-center mb-10 ${isRtl ? "rtl" : ""}`}>
+          <header className={`text-center mb-10 ${isRtl ? 'rtl' : ''}`}>
             {tenant.logoUrl && (
-              <img
-                src={tenant.logoUrl}
-                alt={tenant.name}
-                className="h-16 mx-auto mb-4 object-contain"
-              />
+              <img src={tenant.logoUrl} alt={tenant.name} className="h-16 mx-auto mb-4 object-contain" />
             )}
-            <h1
-              className="text-3xl font-bold"
-              style={{ fontFamily: tenant.headingFont, color: tenant.secondaryColor }}
-            >
+            <h1 className="text-3xl font-bold" style={{ fontFamily: tenant.headingFont, color: tenant.secondaryColor }}>
               {tenant.name}
             </h1>
             {tenant.description && (
@@ -146,10 +140,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
               </p>
             )}
             {(tenant.address || tenant.phone) && (
-              <div
-                className="mt-3 text-sm space-y-1"
-                style={{ color: tenant.textMuted }}
-              >
+              <div className="mt-3 text-sm space-y-1" style={{ color: tenant.textMuted }}>
                 {tenant.address && <p>{tenant.address}</p>}
                 {tenant.phone && <p>{tenant.phone}</p>}
               </div>
@@ -161,15 +152,15 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
               .filter((c) => c.isActive)
               .sort((a, b) => a.displayOrder - b.displayOrder)
               .map((category) => {
-                const catTrans = t(category)
+                const catTrans = t(category);
                 const items = category.items
                   .filter((i) => i.isAvailable)
-                  .sort((a, b) => a.displayOrder - b.displayOrder)
+                  .sort((a, b) => a.displayOrder - b.displayOrder);
 
                 return (
                   <section key={category.id}>
                     <div
-                      className={`flex items-center gap-3 mb-4 pb-2 ${isRtl ? "flex-row-reverse" : ""}`}
+                      className={`flex items-center gap-3 mb-4 pb-2 ${isRtl ? 'flex-row-reverse' : ''}`}
                       style={{ borderBottom: `2px solid ${tenant.accentColor}` }}
                     >
                       <h2
@@ -188,30 +179,25 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                     <div
                       className="gap-3"
                       style={{
-                        display: "grid",
+                        display: 'grid',
                         gridTemplateColumns: gridCols,
                         gap: space,
                       }}
                     >
                       {items.map((item) => {
-                        const itemTrans = t(item)
-                        const qty = quantities.get(item.id) ?? 0
+                        const itemTrans = t(item);
+                        const qty = quantities.get(item.id) ?? 0;
                         return (
-                          <div
-                            key={item.id}
-                            className="menu-card overflow-hidden"
-                          >
+                          <div key={item.id} className="menu-card overflow-hidden">
                             {item.imageCard && (
                               <div className="aspect-[3/2] overflow-hidden">
-                                <img
-                                  src={item.imageCard}
-                                  alt={itemTrans.name}
-                                  className="w-full h-full object-cover"
-                                />
+                                <img src={item.imageCard} alt={itemTrans.name} className="w-full h-full object-cover" />
                               </div>
                             )}
                             <div className="p-4">
-                              <div className={`flex items-start justify-between gap-2 ${isRtl ? "flex-row-reverse" : ""}`}>
+                              <div
+                                className={`flex items-start justify-between gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}
+                              >
                                 <h3 className="font-medium">{itemTrans.name}</h3>
                                 <span
                                   className="font-bold whitespace-nowrap shrink-0"
@@ -221,10 +207,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                 </span>
                               </div>
                               {itemTrans.description && (
-                                <p
-                                  className="text-sm mt-1"
-                                  style={{ color: tenant.textMuted }}
-                                >
+                                <p className="text-sm mt-1" style={{ color: tenant.textMuted }}>
                                   {itemTrans.description}
                                 </p>
                               )}
@@ -235,7 +218,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                       key={tag}
                                       className="text-xs px-2 py-0.5 rounded-full"
                                       style={{
-                                        background: tenant.accentColor + "20",
+                                        background: tenant.accentColor + '20',
                                         color: tenant.accentColor,
                                       }}
                                     >
@@ -244,30 +227,28 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                   ))}
                                 </div>
                               )}
-                              <div className={`flex items-center gap-2 mt-3 ${isRtl ? "flex-row-reverse" : ""}`}>
+                              <div className={`flex items-center gap-2 mt-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
                                 {qty > 0 ? (
                                   <>
                                     <button
                                       onClick={() => setQuantity(item.id, -1)}
                                       className="size-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
                                       style={{
-                                        background: tenant.primaryColor + "15",
+                                        background: tenant.primaryColor + '15',
                                         color: tenant.primaryColor,
                                       }}
                                     >
                                       −
                                     </button>
-                                    <span className="text-sm font-semibold w-5 text-center tabular-nums">
-                                      {qty}
-                                    </span>
+                                    <span className="text-sm font-semibold w-5 text-center tabular-nums">{qty}</span>
                                   </>
                                 ) : null}
                                 <button
                                   onClick={() => setQuantity(item.id, 1)}
                                   className="size-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
                                   style={{
-                                    background: qty > 0 ? tenant.primaryColor : tenant.primaryColor + "15",
-                                    color: qty > 0 ? "#fff" : tenant.primaryColor,
+                                    background: qty > 0 ? tenant.primaryColor : tenant.primaryColor + '15',
+                                    color: qty > 0 ? '#fff' : tenant.primaryColor,
                                   }}
                                 >
                                   +
@@ -275,18 +256,18 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                               </div>
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   </section>
-                )
+                );
               })}
           </div>
 
           {tenant.instagram && (
             <footer className="text-center mt-12 pb-8">
               <a
-                href={`https://instagram.com/${tenant.instagram.replace("@", "")}`}
+                href={`https://instagram.com/${tenant.instagram.replace('@', '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm inline-flex items-center gap-1"
@@ -299,5 +280,5 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         </div>
       </main>
     </>
-  )
+  );
 }

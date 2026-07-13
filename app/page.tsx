@@ -1,16 +1,16 @@
-import { prisma } from "@/lib/prisma"
-import Script from "next/script"
+import { prisma } from '@/lib/prisma';
+import Script from 'next/script';
 
 export default async function Home() {
   const tenants = await prisma.tenant.findMany({
     where: { isActive: true },
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
     select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
-  })
+  });
 
-  const domainMap: Record<string, { slug: string; locale: string }> = {}
+  const domainMap: Record<string, { slug: string; locale: string }> = {};
   for (const t of tenants) {
-    if (t.domain) domainMap[t.domain] = { slug: t.slug, locale: t.defaultLocale }
+    if (t.domain) domainMap[t.domain] = { slug: t.slug, locale: t.defaultLocale };
   }
 
   return (
@@ -23,7 +23,7 @@ export default async function Home() {
         }}
       />
       <main className="max-w-2xl mx-auto px-4 py-16">
-        <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: "var(--font-heading)" }}>
+        <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
           Restaurant Menus
         </h1>
         <p className="text-[var(--text-muted)] mb-8">Choose a restaurant to view their menu</p>
@@ -36,16 +36,12 @@ export default async function Home() {
               style={{ borderLeftColor: t.primaryColor }}
             >
               <h2 className="text-lg font-semibold">{t.name}</h2>
-              {t.description && (
-                <p className="text-sm text-[var(--text-muted)] mt-1">{t.description}</p>
-              )}
-              {t.domain && (
-                <p className="text-xs mt-1 opacity-60">{t.domain}</p>
-              )}
+              {t.description && <p className="text-sm text-[var(--text-muted)] mt-1">{t.description}</p>}
+              {t.domain && <p className="text-xs mt-1 opacity-60">{t.domain}</p>}
             </a>
           ))}
         </div>
       </main>
     </>
-  )
+  );
 }

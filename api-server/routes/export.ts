@@ -1,31 +1,31 @@
-import { Hono } from "hono"
-import { prisma } from "../../lib/prisma"
-import { requireAuth } from "../middleware/auth"
-import type { Variables } from "../types"
+import { Hono } from 'hono';
+import { prisma } from '../../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import type { Variables } from '../types';
 
-export const exportData = new Hono<{ Variables: Variables }>()
+export const exportData = new Hono<{ Variables: Variables }>();
 
-exportData.use("*", requireAuth)
+exportData.use('*', requireAuth);
 
-exportData.get("/", async (c) => {
-  const tenantId = c.req.query("tenantId")
-  const userTenantId = c.get("userTenantId")
-  const role = c.get("userRole")
+exportData.get('/', async (c) => {
+  const tenantId = c.req.query('tenantId');
+  const userTenantId = c.get('userTenantId');
+  const role = c.get('userRole');
 
-  const effectiveTenantId = role === "SUPER_ADMIN" ? tenantId : userTenantId
-  if (!effectiveTenantId) return c.json({ error: "tenantId required" }, 400)
+  const effectiveTenantId = role === 'SUPER_ADMIN' ? tenantId : userTenantId;
+  if (!effectiveTenantId) return c.json({ error: 'tenantId required' }, 400);
 
   const categories = await prisma.category.findMany({
     where: { tenantId: effectiveTenantId },
-    orderBy: { displayOrder: "asc" },
+    orderBy: { displayOrder: 'asc' },
     include: {
       translations: true,
       items: {
-        orderBy: { displayOrder: "asc" },
+        orderBy: { displayOrder: 'asc' },
         include: { translations: true },
       },
     },
-  })
+  });
 
   const result = {
     categories: categories.map((cat) => ({
@@ -50,7 +50,7 @@ exportData.get("/", async (c) => {
         ),
       })),
     })),
-  }
+  };
 
-  return c.json(result)
-})
+  return c.json(result);
+});

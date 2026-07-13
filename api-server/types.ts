@@ -1,5 +1,5 @@
 export type Variables = {
-  userId: string
-  userTenantId: string | null
-  userRole: string
-}
+  userId: string;
+  userTenantId: string | null;
+  userRole: string;
+};

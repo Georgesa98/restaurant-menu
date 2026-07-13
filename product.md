@@ -12,17 +12,18 @@ A **lightweight, static, multi-tenant website** where restaurants get a beautifu
 
 ## Target Users
 
-| User | Goal |
-|---|---|
-| **Restaurant owner / staff** | Update menu items, prices, categories, and theme colors — no technical skills needed |
-| **Customer** | Browse the menu on their phone, see photos, prices, and dietary info — fast even on slow networks |
-| **Super admin (us)** | Onboard new restaurants, configure custom domains, manage billing, oversee all tenants |
+| User                         | Goal                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Restaurant owner / staff** | Update menu items, prices, categories, and theme colors — no technical skills needed              |
+| **Customer**                 | Browse the menu on their phone, see photos, prices, and dietary info — fast even on slow networks |
+| **Super admin (us)**         | Onboard new restaurants, configure custom domains, manage billing, oversee all tenants            |
 
 ---
 
 ## Core Features
 
 ### Public Menu (Customer-facing)
+
 - View restaurant menu grouped by categories
 - See item name, description, price, photo, dietary tags
 - Filter by category or dietary preference
@@ -32,6 +33,7 @@ A **lightweight, static, multi-tenant website** where restaurants get a beautifu
 - Each restaurant has unique theme (colors, fonts) matching their brand
 
 ### Admin Panel (Restaurant staff)
+
 - Secure login (email + password) via **better-auth**
 - Dashboard with quick stats
 - Manage categories (create, rename, reorder, hide)
@@ -40,6 +42,7 @@ A **lightweight, static, multi-tenant website** where restaurants get a beautifu
 - Theme editor (pick brand colors, see live preview)
 
 ### Super Admin Panel (Us)
+
 - List all tenants with status
 - Create new tenant (assign slug, domain, initial theme)
 - Manage tenant users (invite, suspend)
@@ -99,13 +102,13 @@ The admin UI (static export) uses **better-auth client SDK** (`createAuthClient`
 ```yaml
 # Coolify / Traefik config concept
 # For each tenant with a custom domain:
-- rule: "Host(`luigispizzeria.com`) && PathPrefix(`/`)"
+- rule: 'Host(`luigispizzeria.com`) && PathPrefix(`/`)'
   middleware:
-    - "replacePathRegex: ^/(.*) /luigi-pizzeria/$1"
+    - 'replacePathRegex: ^/(.*) /luigi-pizzeria/$1'
 
 # For the API (includes better-auth endpoints):
-- rule: "Host(`api.menuhost.com`)"
-  service: "api-server:3001"
+- rule: 'Host(`api.menuhost.com`)'
+  service: 'api-server:3001'
 ```
 
 ---
@@ -298,6 +301,7 @@ Category (1) ──< MenuItem (many)
 ```
 
 ### Indexing Strategy
+
 - `MenuItem.tenantId + categoryId` — composite index for menu queries
 - `Category.tenantId + slug` — unique for clean URL resolution
 - `User.email` — unique (handled by better-auth)
@@ -328,52 +332,52 @@ Browser (static export)              API Server (Hono)
 **On the API server** (Hono):
 
 ```ts
-import { betterAuth } from "better-auth"
-import { prismaAdapter } from "better-auth/adapters/prisma"
-import { PrismaClient } from "@prisma/client"
+import { betterAuth } from 'better-auth';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: "postgresql" }),
+  database: prismaAdapter(prisma, { provider: 'postgresql' }),
   emailAndPassword: { enabled: true },
   user: {
     additionalFields: {
-      tenantId: { type: "string", required: false },
-      role: { type: "string", required: true, defaultValue: "TENANT_ADMIN" },
+      tenantId: { type: 'string', required: false },
+      role: { type: 'string', required: true, defaultValue: 'TENANT_ADMIN' },
     },
   },
-})
+});
 ```
 
 **In the admin UI** (static export, browser):
 
 ```ts
-import { createAuthClient } from "better-auth/client"
+import { createAuthClient } from 'better-auth/client';
 
 export const authClient = createAuthClient({
-  baseURL: "https://api.menuhost.com", // the API server
-})
+  baseURL: 'https://api.menuhost.com', // the API server
+});
 
 // Login
-await authClient.signIn.email({ email, password })
+await authClient.signIn.email({ email, password });
 
 // Check session
-const { data: session } = await authClient.useSession()
+const { data: session } = await authClient.useSession();
 ```
 
 ### Why better-auth over custom JWT
 
-| Feature | Custom JWT | better-auth |
-|---|---|---|
-| Session management | Manual | Built-in (cookie + DB session) |
-| Password hashing | Manual | Built-in (argon2) |
-| Email verification | Manual | Plugin |
-| Social login | Manual | Plugin (Google, GitHub, etc.) |
-| Multi-tenant roles | Custom code | Additional fields |
-| Rate limiting | Manual | Plugin |
-| CSRF protection | Manual | Built-in |
-| Client SDK | Manual | `createAuthClient()` |
+| Feature            | Custom JWT  | better-auth                    |
+| ------------------ | ----------- | ------------------------------ |
+| Session management | Manual      | Built-in (cookie + DB session) |
+| Password hashing   | Manual      | Built-in (argon2)              |
+| Email verification | Manual      | Plugin                         |
+| Social login       | Manual      | Plugin (Google, GitHub, etc.)  |
+| Multi-tenant roles | Custom code | Additional fields              |
+| Rate limiting      | Manual      | Plugin                         |
+| CSRF protection    | Manual      | Built-in                       |
+| Client SDK         | Manual      | `createAuthClient()`           |
 
 ---
 
@@ -464,9 +468,18 @@ Each tenant's brand colors are stored as DB columns on the `Tenant` model. At bu
 The CSS uses these variables throughout:
 
 ```css
-.menu-card { background: var(--bg); border-radius: var(--radius); }
-.price { color: var(--primary); font-weight: 700; }
-.category-heading { color: var(--secondary); border-bottom: 2px solid var(--accent); }
+.menu-card {
+  background: var(--bg);
+  border-radius: var(--radius);
+}
+.price {
+  color: var(--primary);
+  font-weight: 700;
+}
+.category-heading {
+  color: var(--secondary);
+  border-bottom: 2px solid var(--accent);
+}
 ```
 
 ---
@@ -525,16 +538,16 @@ POST   /api/upload               → { url } (image upload to S3/DO Spaces/B2)
 
 ## Non-Functional Requirements
 
-| Requirement | Target |
-|---|---|
-| **Lighthouse Performance** | 95+ on mobile (public menu) |
-| **Page weight** | < 50 KB total (HTML + CSS), 0 JS on public menu |
-| **TTFB** | < 200ms (static file from CDN/edge) |
-| **Build time** | < 2 min for 100 tenants |
-| **API response time** | < 100ms p95 |
-| **SEO** | Each restaurant menu gets unique meta tags, OG images |
-| **Accessibility** | WCAG 2.1 AA |
-| **Offline resilience** | Public menu works offline via service worker caching (phase 2) |
+| Requirement                | Target                                                         |
+| -------------------------- | -------------------------------------------------------------- |
+| **Lighthouse Performance** | 95+ on mobile (public menu)                                    |
+| **Page weight**            | < 50 KB total (HTML + CSS), 0 JS on public menu                |
+| **TTFB**                   | < 200ms (static file from CDN/edge)                            |
+| **Build time**             | < 2 min for 100 tenants                                        |
+| **API response time**      | < 100ms p95                                                    |
+| **SEO**                    | Each restaurant menu gets unique meta tags, OG images          |
+| **Accessibility**          | WCAG 2.1 AA                                                    |
+| **Offline resilience**     | Public menu works offline via service worker caching (phase 2) |
 
 ---
 
@@ -553,12 +566,12 @@ POST   /api/upload               → { url } (image upload to S3/DO Spaces/B2)
 
 ## Glossary
 
-| Term | Definition |
-|---|---|
-| **Tenant** | A single restaurant that uses the platform |
-| **Slug** | URL-friendly identifier for a tenant (e.g., `luigi-pizzeria`) |
-| **Static Export** | Next.js build mode that outputs pure HTML/CSS — no server needed |
-| **Build Hook** | URL that triggers a rebuild of the static site (provided by Coolify) |
-| **CSS Custom Properties** | CSS variables (e.g., `--primary`) used for theming without JS |
-| **better-auth** | Open-source auth library handling sessions, passwords, and roles |
-| **Traefik** | Reverse proxy used by Coolify for domain routing |
+| Term                      | Definition                                                           |
+| ------------------------- | -------------------------------------------------------------------- |
+| **Tenant**                | A single restaurant that uses the platform                           |
+| **Slug**                  | URL-friendly identifier for a tenant (e.g., `luigi-pizzeria`)        |
+| **Static Export**         | Next.js build mode that outputs pure HTML/CSS — no server needed     |
+| **Build Hook**            | URL that triggers a rebuild of the static site (provided by Coolify) |
+| **CSS Custom Properties** | CSS variables (e.g., `--primary`) used for theming without JS        |
+| **better-auth**           | Open-source auth library handling sessions, passwords, and roles     |
+| **Traefik**               | Reverse proxy used by Coolify for domain routing                     |

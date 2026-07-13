@@ -11,9 +11,9 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-"api:dev": "tsx watch api-server/index.ts",
-"api:start": "tsx api-server/index.ts",
-"api:seed": "tsx api-server/seed-admin.ts"
+    "api:dev": "tsx watch api-server/index.ts",
+    "api:start": "tsx api-server/index.ts",
+    "api:seed": "tsx api-server/seed-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -54,6 +54,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "prettier": "^3.9.5",
     "tailwindcss": "^4",
     "tsx": "^4.23.0",
     "typescript": "^5"

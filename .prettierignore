@@ -1,0 +1,6 @@
+node_modules/
+out/
+.next/
+pnpm-lock.yaml
+pnpm-lock.yml
+coverage/

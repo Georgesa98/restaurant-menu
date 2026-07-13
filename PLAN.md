@@ -1,15 +1,24 @@
 # Implementation Plan
 
-## Phase 0: Foundation ✓ *(done)*
-## Phase 1: Public Menu + Custom Domain Routing + Theme System ✓ *(done)*
-## Phase 1.5: i18n ✓ *(done)*
-## Phase 2: API Server (Hono + better-auth) ✓ *(done)*
-## Phase 3: Admin Panel + shadcn/ui ✓ *(done)*
-## Phase 4: Super Admin Panel ✓ *(done)*
-## Phase 5: Image Optimization ✓ *(done)*
-## Phase 5.5: Import / Export ✓ *(done)*
-## Phase 6: Photo Card + Running Total Counter ✓ *(done)*
-## Phase 7: Deployment (Coolify) ⏳ *(pending)*
+## Phase 0: Foundation ✓ _(done)_
+
+## Phase 1: Public Menu + Custom Domain Routing + Theme System ✓ _(done)_
+
+## Phase 1.5: i18n ✓ _(done)_
+
+## Phase 2: API Server (Hono + better-auth) ✓ _(done)_
+
+## Phase 3: Admin Panel + shadcn/ui ✓ _(done)_
+
+## Phase 4: Super Admin Panel ✓ _(done)_
+
+## Phase 5: Image Optimization ✓ _(done)_
+
+## Phase 5.5: Import / Export ✓ _(done)_
+
+## Phase 6: Photo Card + Running Total Counter ✓ _(done)_
+
+## Phase 7: Deployment (Coolify) ⏳ _(pending)_
 
 - Next.js 16 + TypeScript + Tailwind v4 + Prisma 7 + PostgreSQL
 - better-auth for auth (email/password, session management)
@@ -64,15 +73,15 @@ The `name`/`description` on `Category`/`MenuItem` serve as the fallback (English
 
 ### 1.1 — Domain-based routing for custom domains
 
-Domain→slug map inlined at build time into the root `index.html`. The redirect is a client-side JS lookup on the hostname → `location.replace()`. *(This will be moved to Traefik-level redirects in Phase 7 — see 7.4.)*
+Domain→slug map inlined at build time into the root `index.html`. The redirect is a client-side JS lookup on the hostname → `location.replace()`. _(This will be moved to Traefik-level redirects in Phase 7 — see 7.4.)_
 
 ```html
 <script>
-  (function(){
-    var map = {"luigispizzeria.com":"trattoria-roma","sakurasushi.com":"sakura-sushi"}
-    var slug = map[location.hostname]
-    if (slug && !location.pathname.startsWith("/"+slug)) location.replace("/"+slug+"/menu/")
-  })()
+  (function () {
+    var map = { 'luigispizzeria.com': 'trattoria-roma', 'sakurasushi.com': 'sakura-sushi' };
+    var slug = map[location.hostname];
+    if (slug && !location.pathname.startsWith('/' + slug)) location.replace('/' + slug + '/menu/');
+  })();
 </script>
 ```
 
@@ -80,25 +89,25 @@ Domain→slug map inlined at build time into the root `index.html`. The redirect
 
 17 design tokens stored on the Tenant model, injected as `<style>:root{...}</style>` at build time.
 
-| Field | CSS Variable |
-|---|---|
-| `primaryColor` | `--primary` |
-| `secondaryColor` | `--secondary` |
-| `accentColor` | `--accent` |
-| `backgroundColor` | `--bg` |
-| `surfaceColor` | `--surface` |
-| `textColor` | `--text` |
-| `textMuted` | `--text-muted` |
-| `headingFont` | `--font-heading` |
-| `bodyFont` | `--font-body` |
-| `borderRadiusSm` | `--radius-sm` |
-| `borderRadiusMd` | `--radius-md` |
-| `borderRadiusLg` | `--radius-lg` |
-| `shadow` | `--shadow` |
-| `cardStyle` | `.menu-card { ... }` |
-| `menuLayout` | `--menu-grid` |
-| `spacing` | `--space` |
-| `customCss` | *(raw injection)* |
+| Field             | CSS Variable         |
+| ----------------- | -------------------- |
+| `primaryColor`    | `--primary`          |
+| `secondaryColor`  | `--secondary`        |
+| `accentColor`     | `--accent`           |
+| `backgroundColor` | `--bg`               |
+| `surfaceColor`    | `--surface`          |
+| `textColor`       | `--text`             |
+| `textMuted`       | `--text-muted`       |
+| `headingFont`     | `--font-heading`     |
+| `bodyFont`        | `--font-body`        |
+| `borderRadiusSm`  | `--radius-sm`        |
+| `borderRadiusMd`  | `--radius-md`        |
+| `borderRadiusLg`  | `--radius-lg`        |
+| `shadow`          | `--shadow`           |
+| `cardStyle`       | `.menu-card { ... }` |
+| `menuLayout`      | `--menu-grid`        |
+| `spacing`         | `--space`            |
+| `customCss`       | _(raw injection)_    |
 
 ### 1.3 — Category deep links
 
@@ -139,23 +148,25 @@ npm install next-intl
 ### 1.5.2 — next-intl config files
 
 **`i18n/routing.ts`** — locale definitions, prefix-based routing:
+
 ```ts
 export const routing = defineRouting({
-  locales: ["en", "ar"],
-  defaultLocale: "en",
-  localePrefix: "always",
-})
+  locales: ['en', 'ar'],
+  defaultLocale: 'en',
+  localePrefix: 'always',
+});
 ```
 
 **`i18n/request.ts`** — load UI messages per locale:
+
 ```ts
 export default getRequestConfig(async ({ requestLocale }) => {
-  const locale = await requestLocale
+  const locale = await requestLocale;
   return {
     locale,
     messages: (await import(`../messages/${locale}.json`)).default,
-  }
-})
+  };
+});
 ```
 
 **`messages/en.json`** and **`messages/ar.json`** — UI strings (e.g. "nav.home" → "Menu" / "القائمة", "price" → "Price" / "السعر").
@@ -179,15 +190,14 @@ The root `app/page.tsx` still handles domain redirect, but now also detects brow
 
 ```html
 <script>
-  (function(){
-    var map = {"luigispizzeria.com":"trattoria-roma","sakurasushi.com":"sakura-sushi"}
-    var slug = map[location.hostname]
+  (function () {
+    var map = { 'luigispizzeria.com': 'trattoria-roma', 'sakurasushi.com': 'sakura-sushi' };
+    var slug = map[location.hostname];
     if (slug) {
-      var lang = navigator.language.startsWith("ar") ? "ar" : "en"
-      if (!location.pathname.startsWith("/"+lang+"/"+slug))
-        location.replace("/"+lang+"/"+slug+"/menu/")
+      var lang = navigator.language.startsWith('ar') ? 'ar' : 'en';
+      if (!location.pathname.startsWith('/' + lang + '/' + slug)) location.replace('/' + lang + '/' + slug + '/menu/');
     }
-  })()
+  })();
 </script>
 ```
 
@@ -207,7 +217,7 @@ const data = await prisma.tenant.findUnique({
       },
     },
   },
-})
+});
 ```
 
 In the component, merge: `name = translation?.name ?? fallback.name`.
@@ -253,27 +263,27 @@ out/
 Separate directory, Hono app with better-auth.
 
 ```ts
-import { Hono } from "hono"
-import { cors } from "hono/cors"
-import { betterAuth } from "better-auth"
-import { prismaAdapter } from "better-auth/adapters/prisma"
-import { PrismaClient } from "@prisma/client"
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { betterAuth } from 'better-auth';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: "postgresql" }),
+  database: prismaAdapter(prisma, { provider: 'postgresql' }),
   emailAndPassword: { enabled: true },
   user: {
     additionalFields: {
-      tenantId: { type: "string", required: false },
-      role: { type: "string", required: true, defaultValue: "TENANT_ADMIN" },
+      tenantId: { type: 'string', required: false },
+      role: { type: 'string', required: true, defaultValue: 'TENANT_ADMIN' },
     },
   },
-})
+});
 
-const app = new Hono()
-app.use("/api/*", cors({ origin: "*", credentials: true }))
-app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw))
+const app = new Hono();
+app.use('/api/*', cors({ origin: '*', credentials: true }));
+app.on(['POST', 'GET'], '/api/auth/**', (c) => auth.handler(c.req.raw));
 ```
 
 ### 2.2 — Auth endpoints
@@ -320,7 +330,7 @@ Create 1 super admin + 1 tenant admin per demo tenant via better-auth API.
 
 ---
 
-## Phase 3 — Admin Panel (Client-rendered) ✓ *(done)*
+## Phase 3 — Admin Panel (Client-rendered) ✓ _(done)_
 
 ### 3.1 — shadcn/ui components installed
 
@@ -344,7 +354,7 @@ Two nav items by default (items, categories). "Tenants" nav item shown only for 
 
 ---
 
-## Phase 4: Super Admin Panel ✓ *(done)*
+## Phase 4: Super Admin Panel ✓ _(done)_
 
 ### 4.1 — Tenant list
 
@@ -368,7 +378,7 @@ Routes registered in `api-server/index.ts` under `/api/tenants`.
 
 ---
 
-## Phase 5: Image Optimization ✓ *(done)*
+## Phase 5: Image Optimization ✓ _(done)_
 
 - sharp installed in `api-server/`
 - `POST /api/upload` resizes to 3 WebP variants (150×150 thumbnail, 600×400 card, 1200×800 full) via sharp, persists to local `uploads/` in dev
@@ -376,7 +386,7 @@ Routes registered in `api-server/index.ts` under `/api/tenants`.
 - Migration `20260713224750_add_image_fields` applied
 - Upload button + preview in admin items dialog
 
-## Phase 5.5: Import / Export ✓ *(done)*
+## Phase 5.5: Import / Export ✓ _(done)_
 
 - `POST /api/import` — upserts categories (with Arabic→English name map) and items (matched by `tenantId + categoryId + name`), creates Arabic+English translations
 - `GET /api/export` — dumps all categories + items + translations as JSON
@@ -384,23 +394,23 @@ Routes registered in `api-server/index.ts` under `/api/tenants`.
 - `ExportButton` component — one-click JSON download from sidebar
 - Both registered in `api-server/index.ts` and admin sidebar navigation
 
-## Phase 6: Photo Card + Running Total Counter ✓ *(done)*
+## Phase 6: Photo Card + Running Total Counter ✓ _(done)_
 
 - `components/menu/order-menu.tsx` — responsive card grid (`grid-cols-1 sm:2 lg:3`, `aspect-[3/2]` photo), +/- buttons, sticky order bar with total
 - `components/menu/language-switcher.tsx` extracted to separate file
 - Purely client-side state (no API calls), `Intl.NumberFormat` for locale-aware pricing
 
-## Phase 7: Deployment (Coolify) ⏳ *(pending)*
+## Phase 7: Deployment (Coolify) ⏳ _(pending)_
 
 ### Overview
 
 Three services in Coolify:
 
-| Service | Type | Port | Build Command | Start Command | Publish Dir |
-|---|---|---|---|---|---|
-| **Static Site** (Next.js) | Static Site | — | `npm run build` | — | `out/` |
-| **API Server** (Hono) | Node.js | 3001 | `cd api-server && npm install && npx prisma generate` | `cd api-server && npm run start` | — |
-| **PostgreSQL** | Database | 5432 | — | — | — |
+| Service                   | Type        | Port | Build Command                                         | Start Command                    | Publish Dir |
+| ------------------------- | ----------- | ---- | ----------------------------------------------------- | -------------------------------- | ----------- |
+| **Static Site** (Next.js) | Static Site | —    | `npm run build`                                       | —                                | `out/`      |
+| **API Server** (Hono)     | Node.js     | 3001 | `cd api-server && npm install && npx prisma generate` | `cd api-server && npm run start` | —           |
+| **PostgreSQL**            | Database    | 5432 | —                                                     | —                                | —           |
 
 ### 7.1 — PostgreSQL (Coolify native database)
 
@@ -416,13 +426,13 @@ Three services in Coolify:
 
 **Settings:**
 
-| Setting | Value |
-|---|---|
-| Build pack | `Static Site` |
-| Build command | `npm run build` |
-| Publish directory | `out/` |
-| Install command | `npm install` |
-| Base directory | `/` |
+| Setting           | Value           |
+| ----------------- | --------------- |
+| Build pack        | `Static Site`   |
+| Build command     | `npm run build` |
+| Publish directory | `out/`          |
+| Install command   | `npm install`   |
+| Base directory    | `/`             |
 
 **Environment variables:**
 
@@ -436,23 +446,23 @@ DATABASE_URL=postgresql://postgres:...@restaurant-menu-db:5432/restaurant-menu-d
 
 Add custom domains in Coolify UI → one per tenant. The client-side JS redirect in `out/index.html` handles mapping `hostname → slug`. Add as many as needed:
 
-| Domain | Redirects To |
-|---|---|
-| `menu.valley-group.com` | `/en/valley-group/menu/` |
-| `luigispizzeria.com` | `/en/trattoria-roma/menu/` |
-| `sakurasushi.com` | `/en/sakura-sushi/menu/` |
+| Domain                  | Redirects To               |
+| ----------------------- | -------------------------- |
+| `menu.valley-group.com` | `/en/valley-group/menu/`   |
+| `luigispizzeria.com`    | `/en/trattoria-roma/menu/` |
+| `sakurasushi.com`       | `/en/sakura-sushi/menu/`   |
 
 ### 7.3 — API Server (Hono) — Coolify "Node.js"
 
 **Settings:**
 
-| Setting | Value |
-|---|---|
-| Build pack | `Node.js` |
-| Port | `3001` |
-| Start command | `npm run api:start` |
-| Build command | `cd api-server && npm install && npx prisma generate` |
-| Base directory | `/` |
+| Setting        | Value                                                 |
+| -------------- | ----------------------------------------------------- |
+| Build pack     | `Node.js`                                             |
+| Port           | `3001`                                                |
+| Start command  | `npm run api:start`                                   |
+| Build command  | `cd api-server && npm install && npx prisma generate` |
+| Base directory | `/`                                                   |
 
 The root `package.json` has a root-level workspace, and the API server lives in `api-server/`. The build/start commands `cd` into that directory. No Dockerfile needed — Coolify's Node.js buildpack auto-detects the port.
 
@@ -496,10 +506,10 @@ When the number of domains grows, migrate to Traefik middleware rules to elimina
 ```yaml
 # Applied to the Static Site service in Coolify's docker-compose.yml
 labels:
-  - "traefik.http.routers.static.rule=Host(`luigispizzeria.com`)"
-  - "traefik.http.middlewares.trattoria-redirect.redirectregex.regex=^/"
-  - "traefik.http.middlewares.trattoria-redirect.redirectregex.replacement=/en/trattoria-roma/menu/"
-  - "traefik.http.routers.static.middlewares=trattoria-redirect"
+  - 'traefik.http.routers.static.rule=Host(`luigispizzeria.com`)'
+  - 'traefik.http.middlewares.trattoria-redirect.redirectregex.regex=^/'
+  - 'traefik.http.middlewares.trattoria-redirect.redirectregex.replacement=/en/trattoria-roma/menu/'
+  - 'traefik.http.routers.static.middlewares=trattoria-redirect'
 ```
 
 Browser language detection can be added via a small edge middleware or Coolify's redirect rules. For now, English is the default; the language switcher handles toggling to Arabic.
@@ -520,21 +530,21 @@ When an admin creates/edits/deletes categories or items, the site needs to rebui
 The endpoint already exists in the plan (see Phase 2.4). Create `api-server/routes/builds.ts`:
 
 ```ts
-import { Hono } from "hono"
-import { requireAuth } from "../middleware/auth"
+import { Hono } from 'hono';
+import { requireAuth } from '../middleware/auth';
 
-export const builds = new Hono()
-builds.use("*", requireAuth)
+export const builds = new Hono();
+builds.use('*', requireAuth);
 
-builds.post("/trigger", async (c) => {
-  const hookUrl = process.env.COOLIFY_BUILD_HOOK
-  if (!hookUrl) return c.json({ error: "Build hook not configured" }, 500)
+builds.post('/trigger', async (c) => {
+  const hookUrl = process.env.COOLIFY_BUILD_HOOK;
+  if (!hookUrl) return c.json({ error: 'Build hook not configured' }, 500);
 
-  const res = await fetch(hookUrl, { method: "POST" })
-  if (!res.ok) throw new Error(`Hook returned ${res.status}`)
+  const res = await fetch(hookUrl, { method: 'POST' });
+  if (!res.ok) throw new Error(`Hook returned ${res.status}`);
 
-  return c.json({ triggered: true })
-})
+  return c.json({ triggered: true });
+});
 ```
 
 **Wiring:** Call this endpoint from the items/categories CRUD routes after any write operation. Use `c.exec()` or a simple `fetch` fire-and-forget inside the route handler. For the MVP, a manual "Rebuild site" button in the admin panel is sufficient — no auto-trigger on every save.

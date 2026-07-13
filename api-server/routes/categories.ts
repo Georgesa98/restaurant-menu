@@ -1,46 +1,46 @@
-import { Hono } from "hono"
-import { prisma } from "../../lib/prisma"
-import { requireAuth } from "../middleware/auth"
-import type { Variables } from "../types"
+import { Hono } from 'hono';
+import { prisma } from '../../lib/prisma';
+import { requireAuth } from '../middleware/auth';
+import type { Variables } from '../types';
 
-export const categories = new Hono<{ Variables: Variables }>()
+export const categories = new Hono<{ Variables: Variables }>();
 
-categories.use("*", requireAuth)
+categories.use('*', requireAuth);
 
-categories.get("/", async (c) => {
-  const tenantId = c.req.query("tenantId")
-  const userTenantId = c.get("userTenantId")
-  const role = c.get("userRole")
+categories.get('/', async (c) => {
+  const tenantId = c.req.query('tenantId');
+  const userTenantId = c.get('userTenantId');
+  const role = c.get('userRole');
 
-  const effectiveTenantId = role === "SUPER_ADMIN" ? tenantId : userTenantId
-  if (!effectiveTenantId) return c.json({ error: "tenantId required" }, 400)
+  const effectiveTenantId = role === 'SUPER_ADMIN' ? tenantId : userTenantId;
+  if (!effectiveTenantId) return c.json({ error: 'tenantId required' }, 400);
 
   const cats = await prisma.category.findMany({
     where: { tenantId: effectiveTenantId },
-    orderBy: { displayOrder: "asc" },
+    orderBy: { displayOrder: 'asc' },
     include: { translations: true },
-  })
+  });
 
-  return c.json(cats)
-})
+  return c.json(cats);
+});
 
-categories.get("/:id", async (c) => {
-  const id = c.req.param("id")
+categories.get('/:id', async (c) => {
+  const id = c.req.param('id');
   const cat = await prisma.category.findUnique({
     where: { id },
     include: { translations: true },
-  })
-  if (!cat) return c.json({ error: "Not found" }, 404)
-  return c.json(cat)
-})
+  });
+  if (!cat) return c.json({ error: 'Not found' }, 404);
+  return c.json(cat);
+});
 
-categories.post("/", async (c) => {
-  const body = await c.req.json()
-  const userTenantId = c.get("userTenantId")
-  const role = c.get("userRole")
+categories.post('/', async (c) => {
+  const body = await c.req.json();
+  const userTenantId = c.get('userTenantId');
+  const role = c.get('userRole');
 
-  const tenantId = role === "SUPER_ADMIN" ? body.tenantId : userTenantId
-  if (!tenantId) return c.json({ error: "tenantId required" }, 400)
+  const tenantId = role === 'SUPER_ADMIN' ? body.tenantId : userTenantId;
+  if (!tenantId) return c.json({ error: 'tenantId required' }, 400);
 
   const cat = await prisma.category.create({
     data: {
@@ -50,14 +50,14 @@ categories.post("/", async (c) => {
       description: body.description ?? null,
       displayOrder: body.displayOrder ?? 0,
     },
-  })
+  });
 
-  return c.json(cat, 201)
-})
+  return c.json(cat, 201);
+});
 
-categories.put("/:id", async (c) => {
-  const id = c.req.param("id")
-  const body = await c.req.json()
+categories.put('/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json();
 
   const cat = await prisma.category.update({
     where: { id },
@@ -68,14 +68,14 @@ categories.put("/:id", async (c) => {
       displayOrder: body.displayOrder,
       isActive: body.isActive,
     },
-  })
+  });
 
-  return c.json(cat)
-})
+  return c.json(cat);
+});
 
-categories.patch("/reorder", async (c) => {
-  const body = await c.req.json()
-  const { items } = body as { items: { id: string; displayOrder: number }[] }
+categories.patch('/reorder', async (c) => {
+  const body = await c.req.json();
+  const { items } = body as { items: { id: string; displayOrder: number }[] };
 
   await prisma.$transaction(
     items.map((item) =>
@@ -84,13 +84,13 @@ categories.patch("/reorder", async (c) => {
         data: { displayOrder: item.displayOrder },
       }),
     ),
-  )
+  );
 
-  return c.json({ success: true })
-})
+  return c.json({ success: true });
+});
 
-categories.delete("/:id", async (c) => {
-  const id = c.req.param("id")
-  await prisma.category.delete({ where: { id } })
-  return c.json({ success: true })
-})
+categories.delete('/:id', async (c) => {
+  const id = c.req.param('id');
+  await prisma.category.delete({ where: { id } });
+  return c.json({ success: true });
+});
