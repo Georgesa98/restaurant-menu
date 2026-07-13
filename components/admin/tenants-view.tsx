@@ -26,6 +26,7 @@ type Tenant = {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  customCss: string | null;
   createdAt: string;
 };
 
@@ -110,6 +111,7 @@ export function TenantsView() {
       description: (data.get('description') as string) || null,
       address: (data.get('address') as string) || null,
       phone: (data.get('phone') as string) || null,
+      customCss: (data.get('customCss') as string) || null,
     };
 
     if (editing.id) {
@@ -129,6 +131,42 @@ export function TenantsView() {
     load();
   }
 
+  function generateStarterCss(colors: { primary: string; secondary: string; accent: string }) {
+    return `/* MenuHost — custom theme CSS */
+/* Classes: .menu-page, .menu-header, .menu-title, .menu-tagline, .menu-meta
+   .menu-category, .menu-category-header, .menu-category-name
+   .menu-items-grid, .menu-item, .menu-card, .menu-item-image
+   .menu-item-content, .menu-item-name, .menu-item-price, .menu-item-description
+   .menu-item-tags, .menu-item-tag, .menu-item-qty, .menu-item-qty-btn
+   .menu-order-bar, .menu-order-bar-inner, .menu-footer
+   Variables: var(--primary), var(--secondary), var(--accent),
+   var(--bg), var(--surface), var(--text), var(--text-muted),
+   var(--font-heading), var(--font-body), var(--radius-md), var(--shadow) */
+
+/* Example: bordered cards with uppercase category names */
+.menu-category-name {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+}
+.menu-item {
+  border: 1px solid color-mix(in srgb, ${colors.secondary} 15%, transparent);
+  border-radius: var(--radius-md);
+}
+.menu-item-image img {
+  transition: transform 0.3s ease;
+}
+.menu-item:hover .menu-item-image img {
+  transform: scale(1.05);
+}
+.menu-item-price {
+  background: ${colors.primary}10;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+}`;
+  }
+
   function openEdit(tenant?: Tenant) {
     setEditing(
       tenant ?? {
@@ -143,6 +181,7 @@ export function TenantsView() {
         description: '',
         address: '',
         phone: '',
+        customCss: '',
         _count: { categories: 0, items: 0 },
         primaryColor: '#e74c3c',
         secondaryColor: '#2c3e50',
@@ -288,6 +327,33 @@ export function TenantsView() {
                   <Label>Phone</Label>
                   <Input name="phone" defaultValue={editing?.phone ?? ''} />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Custom CSS</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ta = document.querySelector<HTMLTextAreaElement>('[name="customCss"]');
+                      if (ta) {
+                        const p = editing?.primaryColor ?? '#e74c3c';
+                        const s = editing?.secondaryColor ?? '#2c3e50';
+                        const a = editing?.accentColor ?? '#f39c12';
+                        ta.value = generateStarterCss({ primary: p, secondary: s, accent: a });
+                      }
+                    }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Generate starter
+                  </button>
+                </div>
+                <textarea
+                  name="customCss"
+                  defaultValue={editing?.customCss ?? ''}
+                  className="w-full rounded-lg border border-input bg-transparent p-3 text-xs font-mono leading-relaxed"
+                  rows={10}
+                  placeholder="/* Write CSS here. Leave empty for default styling. */"
+                />
               </div>
             </div>
             <DialogFooter>

@@ -76,6 +76,7 @@ tenants.post('/', async (c) => {
       description: body.description ?? null,
       address: body.address ?? null,
       phone: body.phone ?? null,
+      customCss: body.customCss ?? null,
     },
   });
 
@@ -111,6 +112,7 @@ tenants.put('/:id', async (c) => {
       description: body.description,
       address: body.address,
       phone: body.phone,
+      customCss: body.customCss,
     },
   });
 

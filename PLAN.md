@@ -18,6 +18,8 @@
 
 ## Phase 6: Photo Card + Running Total Counter ✓ _(done)_
 
+## Phase 6.5: Per-tenant CSS Identity ✏️ _(in progress)_
+
 ## Phase 7: Deployment (Coolify) ⏳ _(pending)_
 
 - Next.js 16 + TypeScript + Tailwind v4 + Prisma 7 + PostgreSQL
@@ -399,6 +401,64 @@ Routes registered in `api-server/index.ts` under `/api/tenants`.
 - `components/menu/order-menu.tsx` — responsive card grid (`grid-cols-1 sm:2 lg:3`, `aspect-[3/2]` photo), +/- buttons, sticky order bar with total
 - `components/menu/language-switcher.tsx` extracted to separate file
 - Purely client-side state (no API calls), `Intl.NumberFormat` for locale-aware pricing
+
+## Phase 6.5: Per-tenant CSS Identity ⏳ _(pending)_
+
+The current theme system swaps colors and fonts, but every tenant shares the same DOM structure, card layout, and visual rhythm. Real identity needs per-tenant CSS control so each restaurant can define its own card style, category treatment, price position, photo treatment, and structural layout via pure CSS.
+
+### 6.5.1 — Add CSS class hooks to `order-menu.tsx`
+
+Every semantic element gets a class name so custom CSS can target it:
+
+| Element | Class | Notes |
+|---|---|---|
+| Page wrapper | `.menu-page` | `<main>` container |
+| Order bar | `.menu-order-bar` | Sticky top bar with total |
+| Header | `.menu-header` | Logo + name + tagline |
+| Logo | `.menu-logo` | `<img>` in header |
+| Restaurant name | `.menu-title` | `<h1>` |
+| Tagline/description | `.menu-tagline` | `<p>` |
+| Category section | `.menu-category` | `<section>` per category |
+| Category header | `.menu-category-header` | Title + bottom border |
+| Category name | `.menu-category-name` | `<h2>` |
+| Items grid | `.menu-items-grid` | `display: grid` container |
+| Item card | `.menu-item` | Each menu item wrapper (keeps `.menu-card` as alias) |
+| Item image | `.menu-item-image` | `aspect-[3/2]` container |
+| Item content | `.menu-item-content` | Text block inside card |
+| Item name | `.menu-item-name` | `<h3>` |
+| Item price | `.menu-item-price` | Price `<span>` |
+| Item description | `.menu-item-description` | `<p>` description |
+| Item tags | `.menu-item-tags` | Dietary tag container |
+| Item tag pill | `.menu-item-tag` | Individual dietary tag |
+| Qty controls | `.menu-item-qty` | +/- button container |
+| Qty button | `.menu-item-qty-btn` | Individual +/- button |
+| Footer | `.menu-footer` | Instagram link |
+
+No structural changes — only adding `className` attributes. Existing inline styles and `menu-card` class remain untouched.
+
+### 6.5.2 — Include `customCss` in tenant API
+
+Both `POST /api/tenants` and `PUT /api/tenants/:id` in `api-server/routes/tenants.ts` need `customCss` added to the data payload (create + update).
+
+### 6.5.3 — Add CSS textarea to TenantsView dialog
+
+In `components/admin/tenants-view.tsx`:
+
+- Add `customCss` to the Tenant type
+- Add a `<textarea>` in the dialog form (monospace font, ~200px height, plain text)
+- Include `customCss` in the form data submission
+- Set a default empty string in `openEdit()`
+
+For convenience, add a "Generate starter" button that pre-fills the textarea with a commented CSS template showing all available class hooks and variable names — so the admin knows what to target.
+
+### 6.5.4 — Seed demo CSS (optional)
+
+Add example `customCss` to the two demo tenants in `prisma/seed.ts` to show the visual difference:
+
+- **Trattoria Roma**: Classic Italian — bordered cards, serif category names in uppercase, prices right-aligned in a badge, thin dividers between items
+- **Sakura Sushi Bar**: Modern Japanese — no card background, items separated by a subtle line, prices inline after name in smaller text
+
+This gives immediate visual proof that the system works and inspires tenant admins.
 
 ## Phase 7: Deployment (Coolify) ⏳ _(pending)_
 

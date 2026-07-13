@@ -93,7 +93,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
       `}</style>
 
       <main
-        className="min-h-dvh"
+        className="menu-page min-h-dvh"
         style={{
           fontFamily: tenant.bodyFont,
           background: tenant.backgroundColor,
@@ -103,14 +103,14 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         {/* Order bar */}
         {totalItems > 0 && (
           <div
-            className="sticky top-0 z-10 py-3 px-4"
+            className="menu-order-bar sticky top-0 z-10 py-3 px-4"
             style={{
               background: tenant.primaryColor,
               color: '#fff',
             }}
           >
             <div
-              className="mx-auto flex items-center justify-between"
+              className="menu-order-bar-inner mx-auto flex items-center justify-between"
               style={{ maxWidth: tenant.menuLayout === 'two-column' ? '900px' : '640px' }}
             >
               <span className="text-sm font-medium">
@@ -127,20 +127,23 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
             <LanguageSwitcher locale={locale} slug={tenant.slug} />
           </div>
 
-          <header className={`text-center mb-10 ${isRtl ? 'rtl' : ''}`}>
+          <header className={`menu-header text-center mb-10 ${isRtl ? 'rtl' : ''}`}>
             {tenant.logoUrl && (
-              <img src={tenant.logoUrl} alt={tenant.name} className="h-16 mx-auto mb-4 object-contain" />
+              <img src={tenant.logoUrl} alt={tenant.name} className="menu-logo h-16 mx-auto mb-4 object-contain" />
             )}
-            <h1 className="text-3xl font-bold" style={{ fontFamily: tenant.headingFont, color: tenant.secondaryColor }}>
+            <h1
+              className="menu-title text-3xl font-bold"
+              style={{ fontFamily: tenant.headingFont, color: tenant.secondaryColor }}
+            >
               {tenant.name}
             </h1>
             {tenant.description && (
-              <p className="mt-1" style={{ color: tenant.textMuted }}>
+              <p className="menu-tagline mt-1" style={{ color: tenant.textMuted }}>
                 {tenant.description}
               </p>
             )}
             {(tenant.address || tenant.phone) && (
-              <div className="mt-3 text-sm space-y-1" style={{ color: tenant.textMuted }}>
+              <div className="menu-meta mt-3 text-sm space-y-1" style={{ color: tenant.textMuted }}>
                 {tenant.address && <p>{tenant.address}</p>}
                 {tenant.phone && <p>{tenant.phone}</p>}
               </div>
@@ -158,13 +161,13 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                   .sort((a, b) => a.displayOrder - b.displayOrder);
 
                 return (
-                  <section key={category.id}>
+                  <section key={category.id} className="menu-category">
                     <div
-                      className={`flex items-center gap-3 mb-4 pb-2 ${isRtl ? 'flex-row-reverse' : ''}`}
+                      className={`menu-category-header flex items-center gap-3 mb-4 pb-2 ${isRtl ? 'flex-row-reverse' : ''}`}
                       style={{ borderBottom: `2px solid ${tenant.accentColor}` }}
                     >
                       <h2
-                        className="text-xl font-semibold"
+                        className="menu-category-name text-xl font-semibold"
                         style={{ fontFamily: tenant.headingFont, color: tenant.secondaryColor }}
                       >
                         {catTrans.name}
@@ -177,7 +180,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                     </div>
 
                     <div
-                      className="gap-3"
+                      className="menu-items-grid gap-3"
                       style={{
                         display: 'grid',
                         gridTemplateColumns: gridCols,
@@ -188,35 +191,35 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                         const itemTrans = t(item);
                         const qty = quantities.get(item.id) ?? 0;
                         return (
-                          <div key={item.id} className="menu-card overflow-hidden">
+                          <div key={item.id} className="menu-item menu-card overflow-hidden">
                             {item.imageCard && (
-                              <div className="aspect-[3/2] overflow-hidden">
+                              <div className="menu-item-image aspect-[3/2] overflow-hidden">
                                 <img src={item.imageCard} alt={itemTrans.name} className="w-full h-full object-cover" />
                               </div>
                             )}
-                            <div className="p-4">
+                            <div className="menu-item-content p-4">
                               <div
                                 className={`flex items-start justify-between gap-2 ${isRtl ? 'flex-row-reverse' : ''}`}
                               >
-                                <h3 className="font-medium">{itemTrans.name}</h3>
+                                <h3 className="menu-item-name font-medium">{itemTrans.name}</h3>
                                 <span
-                                  className="font-bold whitespace-nowrap shrink-0"
+                                  className="menu-item-price font-bold whitespace-nowrap shrink-0"
                                   style={{ color: tenant.primaryColor }}
                                 >
                                   {formatPrice(Number(item.price), locale)}
                                 </span>
                               </div>
                               {itemTrans.description && (
-                                <p className="text-sm mt-1" style={{ color: tenant.textMuted }}>
+                                <p className="menu-item-description text-sm mt-1" style={{ color: tenant.textMuted }}>
                                   {itemTrans.description}
                                 </p>
                               )}
                               {item.dietaryTags.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                <div className="menu-item-tags flex flex-wrap gap-1.5 mt-2">
                                   {item.dietaryTags.map((tag) => (
                                     <span
                                       key={tag}
-                                      className="text-xs px-2 py-0.5 rounded-full"
+                                      className="menu-item-tag text-xs px-2 py-0.5 rounded-full"
                                       style={{
                                         background: tenant.accentColor + '20',
                                         color: tenant.accentColor,
@@ -227,12 +230,12 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                   ))}
                                 </div>
                               )}
-                              <div className={`flex items-center gap-2 mt-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
+                              <div className={`menu-item-qty flex items-center gap-2 mt-3 ${isRtl ? 'flex-row-reverse' : ''}`}>
                                 {qty > 0 ? (
                                   <>
                                     <button
                                       onClick={() => setQuantity(item.id, -1)}
-                                      className="size-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+                                      className="menu-item-qty-btn size-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
                                       style={{
                                         background: tenant.primaryColor + '15',
                                         color: tenant.primaryColor,
@@ -245,7 +248,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                 ) : null}
                                 <button
                                   onClick={() => setQuantity(item.id, 1)}
-                                  className="size-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+                                  className="menu-item-qty-btn size-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
                                   style={{
                                     background: qty > 0 ? tenant.primaryColor : tenant.primaryColor + '15',
                                     color: qty > 0 ? '#fff' : tenant.primaryColor,
@@ -265,7 +268,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           </div>
 
           {tenant.instagram && (
-            <footer className="text-center mt-12 pb-8">
+            <footer className="menu-footer text-center mt-12 pb-8">
               <a
                 href={`https://instagram.com/${tenant.instagram.replace('@', '')}`}
                 target="_blank"
