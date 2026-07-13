@@ -40,7 +40,9 @@ export type TenantData = {
       name: string
       description: string | null
       price: { toString: () => string }
-      imageUrl: string | null
+      imageThumbnail: string | null
+      imageCard: string | null
+      imageFull: string | null
       isAvailable: boolean
       displayOrder: number
       dietaryTags: string[]

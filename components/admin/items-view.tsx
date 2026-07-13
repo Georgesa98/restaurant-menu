@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react"
+import { Plus, Pencil, Trash2, GripVertical, Upload, X } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -43,7 +43,9 @@ type Item = {
   name: string
   description: string | null
   price: number
-  imageUrl: string | null
+  imageThumbnail: string | null
+  imageCard: string | null
+  imageFull: string | null
   isAvailable: boolean
   displayOrder: number
   dietaryTags: string[]
@@ -130,6 +132,7 @@ export function ItemsView() {
   const [categoryId, setCategoryId] = useState("")
   const [filterCategory, setFilterCategory] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [uploading, setUploading] = useState(false)
 
   const tenantId = user?.role === "SUPER_ADMIN" ? "" : user?.tenantId
 
@@ -193,7 +196,9 @@ export function ItemsView() {
       name: data.get("name") as string,
       description: (data.get("description") as string) || null,
       price: parseFloat(data.get("price") as string),
-      imageUrl: (data.get("imageUrl") as string) || null,
+      imageThumbnail: (data.get("imageThumbnail") as string) || null,
+      imageCard: (data.get("imageCard") as string) || null,
+      imageFull: (data.get("imageFull") as string) || null,
       isAvailable: data.get("isAvailable") === "on",
       displayOrder: Number(data.get("displayOrder")),
       dietaryTags: (data.get("dietaryTags") as string).split(",").map((s) => s.trim()).filter(Boolean),
@@ -235,6 +240,22 @@ export function ItemsView() {
     load()
   }
 
+  const [previews, setPreviews] = useState<{ thumbnail: string; card: string; full: string } | null>(null)
+
+  async function uploadFile(file: File) {
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await api.post("/api/upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      setPreviews(res.data)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   function openEdit(item?: Item) {
     const defaults = item ?? {
       id: "",
@@ -242,12 +263,19 @@ export function ItemsView() {
       name: "",
       description: "",
       price: 0,
-      imageUrl: null,
+      imageThumbnail: null,
+      imageCard: null,
+      imageFull: null,
       isAvailable: true,
       displayOrder: 0,
       dietaryTags: [],
       translations: [],
     }
+    setPreviews(
+      item?.imageCard
+        ? { thumbnail: item.imageThumbnail ?? "", card: item.imageCard, full: item.imageFull ?? "" }
+        : null,
+    )
     setEditing(defaults)
     setCategoryId(defaults.categoryId ?? "")
     setOpen(true)
@@ -319,7 +347,7 @@ export function ItemsView() {
         </SortableContext>
       </DndContext>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setPreviews(null); setEditing(null) } }}>
         <DialogContent className="sm:max-w-xl">
           <form onSubmit={save}>
             <DialogHeader>
@@ -363,8 +391,48 @@ export function ItemsView() {
                   <Input name="displayOrder" type="number" defaultValue={editing?.displayOrder} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("imageUrl")}</Label>
-                  <Input name="imageUrl" defaultValue={editing?.imageUrl ?? ""} />
+                  <Label>Image</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploading}
+                      onClick={() => document.getElementById("image-upload")?.click()}
+                    >
+                      <Upload className="size-3.5" />
+                      {uploading ? "Uploading…" : "Upload"}
+                    </Button>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) await uploadFile(file)
+                      }}
+                    />
+                  </div>
+                  <input type="hidden" name="imageThumbnail" value={previews?.thumbnail ?? ""} />
+                  <input type="hidden" name="imageCard" value={previews?.card ?? ""} />
+                  <input type="hidden" name="imageFull" value={previews?.full ?? ""} />
+                  {previews?.card && (
+                    <div className="relative mt-2 inline-block">
+                      <img
+                        src={previews.card}
+                        alt="Preview"
+                        className="w-24 h-16 rounded-lg object-cover ring-1 ring-foreground/10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPreviews(null)}
+                        className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-background ring-1 ring-foreground/10 flex items-center justify-center hover:bg-muted"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">

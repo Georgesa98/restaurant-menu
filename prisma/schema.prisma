@@ -175,7 +175,9 @@ model MenuItem {
   name         String
   description  String?
   price        Decimal  @db.Decimal(10, 2)
-  imageUrl     String?
+  imageThumbnail String?  // 150×150 WebP
+  imageCard      String?  // 600×400 WebP
+  imageFull      String?  // 1200×800 WebP
   isAvailable  Boolean  @default(true)
   displayOrder Int      @default(0)
   dietaryTags  String[]

@@ -7,6 +7,7 @@ import { categories } from "./routes/categories"
 import { items } from "./routes/items"
 import { translations } from "./routes/translations"
 import { tenants } from "./routes/tenants"
+import { upload } from "./routes/upload"
 
 const app = new Hono()
 
@@ -20,8 +21,12 @@ app.route("/api/categories", categories)
 app.route("/api/items", items)
 app.route("/api/translations", translations)
 app.route("/api/tenants", tenants)
+app.route("/api/upload", upload)
 
-app.post("/api/upload", (c) => c.json({ error: "Not implemented" }, 501))
+app.use("/uploads/*", async (c, next) => {
+  const { serveStatic } = await import("@hono/node-server/serve-static")
+  return serveStatic({ root: "./" })(c, next)
+})
 
 app.notFound((c) => c.json({ error: "Not found", path: c.req.path }, 404))
 

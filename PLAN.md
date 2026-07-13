@@ -4,9 +4,11 @@
 ## Phase 1: Public Menu + Custom Domain Routing + Theme System ✓ *(done)*
 ## Phase 1.5: i18n ✓ *(done)*
 ## Phase 2: API Server (Hono + better-auth) ✓ *(done)*
-## Phase 3: Admin Panel + shadcn/ui ⏳ *(in progress)*
-## Phase 4: Super Admin Panel ⏳ *(pending)*
-## Phase 5: Deployment ⏳ *(pending)*
+## Phase 3: Admin Panel + shadcn/ui ✓ *(done)*
+## Phase 4: Super Admin Panel ✓ *(done)*
+## Phase 5: Image Optimization ⏳ *(pending)*
+## Phase 6: Photo Card + Running Total Counter ⏳ *(pending)*
+## Phase 7: Deployment (Coolify) ⏳ *(pending)*
 
 - Next.js 16 + TypeScript + Tailwind v4 + Prisma 7 + PostgreSQL
 - better-auth for auth (email/password, session management)
@@ -61,7 +63,7 @@ The `name`/`description` on `Category`/`MenuItem` serve as the fallback (English
 
 ### 1.1 — Domain-based routing for custom domains
 
-Inline a domain→slug map in the root `index.html` at build time:
+Domain→slug map inlined at build time into the root `index.html`. The redirect is a client-side JS lookup on the hostname → `location.replace()`. *(This will be moved to Traefik-level redirects in Phase 7 — see 7.4.)*
 
 ```html
 <script>
@@ -319,107 +321,155 @@ Create 1 super admin + 1 tenant admin per demo tenant via better-auth API.
 
 ## Phase 3 — Admin Panel (Client-rendered) ✓ *(done)*
 
-### 3.1 — UI overhaul: shadcn/ui
+### 3.1 — shadcn/ui components installed
 
-Replace raw Tailwind inputs/buttons/modals with shadcn/ui components for a polished admin experience.
+Authenticated SPA at `/[locale]/admin/` with dark sidebar, warm ivory content area, 3 brand colors (chili, juniper, amber).
 
-```bash
-pnpm dlx shadcn@latest init     # configure base styles
-pnpm dlx shadcn@latest add button card input label select dialog tabs
-```
+### 3.2 — Auth
 
-Components will be ported to use shadcn primitives:
-- Login form → `Card` + `Input` + `Button`
-- Sidebar → `Button` variants
-- Category/item modals → `Dialog` + `Tabs` (locale switching)
-- Settings → `Card` + `Input`
+Login page, `AuthProvider` wrapper, session check via `authClient.useSession()`, redirect to login if unauthenticated.
 
-### 3.2 — better-auth client
+### 3.3 — Items view
 
-```ts
-import { createAuthClient } from "better-auth/client"
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL!,
-})
-```
+Card grid with search + category filter pills + availability toggle + drag-and-drop reorder + inline EN/AR translations in dialog (no tabs).
 
-### 3.2 — Login
+### 3.4 — Categories view
 
-`/admin/login` → email/password via `authClient.signIn.email()`.
+Card grid with drag-and-drop reorder + inline EN/AR translations in dialog (no tabs).
 
-### 3.3 — Auth provider
+### 3.5 — Layout
 
-`AuthProvider` wraps admin routes, checks `authClient.useSession()`, redirects to login if unauthenticated.
-
-### 3.4 — Dashboard
-
-`/admin/dashboard` → stats, quick actions, last build status.
-
-### 3.5 — Category management
-
-`/admin/categories` → list with search, create, edit, delete. Drag-and-drop reorder. When editing, show tabs for each locale (`en` / `ar`) with separate name/description inputs.
-
-### 3.6 — Item management
-
-- `/admin/items` — table with search/filter, availability toggle.
-- `/admin/items/new` — create form with locale tabs for name/description.
-- `/admin/items/[id]/edit` — edit form with locale tabs.
-- Dietary tags and image are locale-independent (shared).
-
-### 3.7 — Settings + Theme editor
-
-`/admin/settings` → restaurant info + theme picker for all 17 design tokens + "Advanced CSS" textarea. Locale selector for default language and available languages (checkboxes for `en`, `ar`).
+Two nav items by default (items, categories). "Tenants" nav item shown only for `SUPER_ADMIN` role.
 
 ---
 
-## Phase 4: Super Admin Panel
+## Phase 4: Super Admin Panel ✓ *(done)*
 
 ### 4.1 — Tenant list
 
-`/_super/tenants` → table with search, status, domain, available locales.
+Card grid with search, status dot, plan badge, categories/items count, domain.
 
 ### 4.2 — Create / Edit tenant
 
-`/_super/tenants/new` and `/_super/tenants/[id]/edit` — full form with theme presets, locale settings.
+Dialog form with name, slug, domain, plan tier, default locale, description, address, phone, active toggle.
 
 ### 4.3 — User management
 
-`/_super/tenants/[id]/users` → invite, suspend, remove tenant admins.
+Per-tenant user dialog showing all admins for that tenant with role badges.
 
-### 4.4 — Build history
+### 4.4 — Tenant CRUD API
 
-`/_super/tenants/[id]/builds` → rebuild statuses.
+`GET/POST/PUT/DELETE /api/tenants` gated by `SUPER_ADMIN` role check in middleware. `GET /api/tenants/:id/users` for user listing.
 
-### 4.5 — Domain verification
+### 4.5 — API registration
 
-`/_super/tenants/[id]/domains` → add domain, check DNS.
+Routes registered in `api-server/index.ts` under `/api/tenants`.
 
 ---
 
-## Phase 5: Deployment (Coolify)
+## Phase 5: Image Optimization ⏳ *(pending)*
 
-### 5.1 — Static Site Service
+### 5.1 — Install sharp
+
+```bash
+cd api-server && npm install sharp
+```
+
+### 5.2 — Rewrite POST /api/upload
+
+Accept multipart upload, pipe through `sharp` before persisting:
+
+- Resize to 3 variants: **thumbnail** (150×150 WebP, crop-center), **card** (600×400 WebP, cover), **full** (1200×800 max WebP, inside)
+- Strip EXIF metadata
+- Persist to `STORAGE_ENDPOINT` (S3-compatible bucket or local filesystem for dev)
+- Return `{ thumbnail, card, full }` URLs
+
+### 5.3 — Schema
+
+Add an `ImageSet` model or store three URL columns directly on `MenuItem`:
+
+```prisma
+model MenuItem {
+  // ...existing fields...
+  imageThumbnail String?  // 150×150 WebP
+  imageCard      String?  // 600×400 WebP
+  imageFull      String?  // 1200×800 WebP
+}
+```
+
+### 5.4 — Static build integration
+
+At build time, fetch images and include them as static assets, or reference the CDN URLs directly in the static HTML (latter is simpler — images stay on the CDN, no need to bloat the static export).
+
+### 5.5 — Migration
+
+Generate migration for new image columns, run against production DB.
+
+---
+
+## Phase 6: Photo Card + Running Total Counter ⏳ *(pending)*
+
+### 6.1 — Card grid layout
+
+Update `app/[locale]/[slug]/menu/page.tsx` to render items in a responsive card grid (`grid-cols-1 sm:2 lg:3`) with:
+
+- `aspect-[3/2]` photo box (uses `imageCard`)
+- Item name (localized), description (localized), price
+- Dietary tags (vegetarian, vegan, gluten-free — locale-independent)
+
+### 6.2 — Running total counter
+
+Small islands-style client component in the menu header:
+
+- Maintains a local `Map<itemId, quantity>` in React state
+- "+" / "–" buttons on each card
+- Header shows total items count and running total price
+- **No API calls** — purely client-side state
+- `"use client"` boundary kept small so the rest of the page stays zero-JS
+
+### 6.3 — Price formatting
+
+Locale-aware: `en` → `$12.50`, `ar` → `١٢٫٥٠ $` (or appropriate Arabic numeral format). Use `Intl.NumberFormat` from the client component.
+
+---
+
+## Phase 7: Deployment (Coolify) ⏳ *(pending)*
+
+### 7.1 — Static Site Service
 - Type: **Static Site**, build: `npm run build`, publish: `out/`
 - Env: `DATABASE_URL`
 - Custom domains: Add each tenant's domain in Coolify UI
 
-### 5.2 — API Server Service
+### 7.2 — API Server Service
 - Type: **Node.js**, port: 3001
 - Env: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `COOLIFY_BUILD_HOOK`, `STORAGE_ENDPOINT`, `STORAGE_KEY`
 
-### 5.3 — PostgreSQL
+### 7.3 — PostgreSQL
 - Add PostgreSQL in Coolify, connection string → `DATABASE_URL`
 
-### 5.4 — Traefik routing
+### 7.4 — Traefik routing (redirect at proxy level)
 
-```
-luigispizzeria.com ──► Static Site
-  → domain redirect → /en/trattoria-roma/menu/ (or /ar/ based on browser language)
-sakurasushi.com    ──► Static Site
-api.menuhost.com   ──► API Server
+Replace the client-side JS redirect in `index.html` with Traefik middleware rules. Each custom domain gets a static redirect before the browser ever downloads a page:
+
+```yaml
+# docker-compose.yml (Coolify)
+labels:
+  - "traefik.http.routers.static.rule=Host(`luigispizzeria.com`)"
+  - "traefik.http.middlewares.trattoria-redirect.redirectregex.regex=^/"
+  - "traefik.http.middlewares.trattoria-redirect.redirectregex.replacement=/en/trattoria-roma/menu/"
+  - "traefik.http.routers.static.middlewares=trattoria-redirect"
+
+  - "traefik.http.routers.static2.rule=Host(`sakurasushi.com`)"
+  - "traefik.http.middlewares.sakura-redirect.redirectregex.regex=^/"
+  - "traefik.http.middlewares.sakura-redirect.redirectregex.replacement=/en/sakura-sushi/menu/"
+  - "traefik.http.routers.static2.middlewares=sakura-redirect"
 ```
 
-### 5.5 — Build hooks
+Browser language detection: Can be extended per domain (e.g. `sakurasushi.com` redirects to `/ja/sakura-sushi/menu/` if needed via a small edge middleware or by using Coolify's own redirect rules). For the MVP, English is the default; the language switcher on the menu page covers toggling to Arabic.
+
+The root `index.html` becomes a true 0-JS page (just a `<meta http-equiv="refresh">` fallback or a static landing page).
+
+### 7.5 — Build hooks
 - Coolify webhook called by API on data change → site rebuilds (~30s)
 
 ---
@@ -433,10 +483,12 @@ api.menuhost.com   ──► API Server
 - [ ] Category/item names show correct translation per locale
 - [ ] Fallback works: if translation missing, shows English name
 - [ ] Language switcher toggles between `/en/...` and `/ar/...`
-- [ ] Domain redirect includes locale detection (`navigator.language`)
-- [ ] Public menu has 0 KB client JavaScript (excluding language switcher component)
+- [ ] Domain redirect is handled at Traefik level (no client-side JS redirect)
+- [ ] Public menu has 0 KB client JavaScript (excluding language switcher and counter components)
 - [ ] API CRUD includes translation upsert endpoints
-- [ ] Admin forms have locale tabs for multilingual content
+- [ ] Image upload resizes + converts to WebP via sharp (3 sizes)
+- [ ] Menu items render in a photo card grid with consistent aspect ratios
+- [ ] Running total counter works client-side with no API calls
 - [ ] Admin login/auth works
 - [ ] Super admin can manage tenants + locale settings
 - [ ] Mobile responsive, Lighthouse ≥ 95

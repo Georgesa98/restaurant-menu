@@ -153,9 +153,9 @@ export function MenuPage({
                             key={item.id}
                             className="menu-card flex gap-3 p-4"
                           >
-                            {item.imageUrl && (
+                            {item.imageCard && (
                               <img
-                                src={item.imageUrl}
+                                src={item.imageCard}
                                 alt={itemTrans.name}
                                 className={`w-20 h-20 object-cover shrink-0 ${isRtl ? "order-last" : ""}`}
                                 style={{ borderRadius: tenant.borderRadiusSm }}
