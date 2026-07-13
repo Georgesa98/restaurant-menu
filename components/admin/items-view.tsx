@@ -43,6 +43,7 @@ type Item = {
   name: string
   description: string | null
   price: number
+  financialPrice: number
   imageThumbnail: string | null
   imageCard: string | null
   imageFull: string | null
@@ -196,6 +197,7 @@ export function ItemsView() {
       name: data.get("name") as string,
       description: (data.get("description") as string) || null,
       price: parseFloat(data.get("price") as string),
+      financialPrice: parseFloat(data.get("financialPrice") as string) || 0,
       imageThumbnail: (data.get("imageThumbnail") as string) || null,
       imageCard: (data.get("imageCard") as string) || null,
       imageFull: (data.get("imageFull") as string) || null,
@@ -263,6 +265,7 @@ export function ItemsView() {
       name: "",
       description: "",
       price: 0,
+      financialPrice: 0,
       imageThumbnail: null,
       imageCard: null,
       imageFull: null,
@@ -356,27 +359,31 @@ export function ItemsView() {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>{t("categories")}</Label>
-                  <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? "")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t("categories")}</Label>
+                    <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? "")}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="—" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Consumer price</Label>
+                    <Input name="price" type="number" step="0.01" defaultValue={editing?.price} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Financial price</Label>
+                    <Input name="financialPrice" type="number" step="0.01" defaultValue={editing?.financialPrice} />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("price")}</Label>
-                  <Input name="price" type="number" step="0.01" defaultValue={editing?.price} required />
-                </div>
-              </div>
               <div className="space-y-2">
                 <Label>{t("name")}</Label>
                 <Input name="name" defaultValue={editing?.name} required />
