@@ -8,6 +8,9 @@ import { items } from "./routes/items"
 import { translations } from "./routes/translations"
 import { tenants } from "./routes/tenants"
 import { upload } from "./routes/upload"
+import { exportData } from "./routes/export"
+import { importData } from "./routes/import"
+import { builds } from "./routes/builds"
 
 const app = new Hono()
 
@@ -22,6 +25,9 @@ app.route("/api/items", items)
 app.route("/api/translations", translations)
 app.route("/api/tenants", tenants)
 app.route("/api/upload", upload)
+app.route("/api/export", exportData)
+app.route("/api/import", importData)
+app.route("/api/builds", builds)
 
 app.use("/uploads/*", async (c, next) => {
   const { serveStatic } = await import("@hono/node-server/serve-static")
