@@ -11,8 +11,9 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-    "api:dev": "tsx watch api-server/index.ts",
-    "api:seed": "tsx api-server/seed-admin.ts"
+"api:dev": "tsx watch api-server/index.ts",
+"api:start": "tsx api-server/index.ts",
+"api:seed": "tsx api-server/seed-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

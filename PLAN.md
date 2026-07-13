@@ -6,8 +6,9 @@
 ## Phase 2: API Server (Hono + better-auth) ✓ *(done)*
 ## Phase 3: Admin Panel + shadcn/ui ✓ *(done)*
 ## Phase 4: Super Admin Panel ✓ *(done)*
-## Phase 5: Image Optimization ⏳ *(pending)*
-## Phase 6: Photo Card + Running Total Counter ⏳ *(pending)*
+## Phase 5: Image Optimization ✓ *(done)*
+## Phase 5.5: Import / Export ✓ *(done)*
+## Phase 6: Photo Card + Running Total Counter ✓ *(done)*
 ## Phase 7: Deployment (Coolify) ⏳ *(pending)*
 
 - Next.js 16 + TypeScript + Tailwind v4 + Prisma 7 + PostgreSQL
@@ -367,128 +368,232 @@ Routes registered in `api-server/index.ts` under `/api/tenants`.
 
 ---
 
-## Phase 5: Image Optimization ⏳ *(pending)*
+## Phase 5: Image Optimization ✓ *(done)*
 
-### 5.1 — Install sharp
+- sharp installed in `api-server/`
+- `POST /api/upload` resizes to 3 WebP variants (150×150 thumbnail, 600×400 card, 1200×800 full) via sharp, persists to local `uploads/` in dev
+- Schema: `imageThumbnail`/`imageCard`/`imageFull` columns on `MenuItem`
+- Migration `20260713224750_add_image_fields` applied
+- Upload button + preview in admin items dialog
 
-```bash
-cd api-server && npm install sharp
-```
+## Phase 5.5: Import / Export ✓ *(done)*
 
-### 5.2 — Rewrite POST /api/upload
+- `POST /api/import` — upserts categories (with Arabic→English name map) and items (matched by `tenantId + categoryId + name`), creates Arabic+English translations
+- `GET /api/export` — dumps all categories + items + translations as JSON
+- `ImportView` component — drag-and-drop file upload, confirm, result display with counts/errors
+- `ExportButton` component — one-click JSON download from sidebar
+- Both registered in `api-server/index.ts` and admin sidebar navigation
 
-Accept multipart upload, pipe through `sharp` before persisting:
+## Phase 6: Photo Card + Running Total Counter ✓ *(done)*
 
-- Resize to 3 variants: **thumbnail** (150×150 WebP, crop-center), **card** (600×400 WebP, cover), **full** (1200×800 max WebP, inside)
-- Strip EXIF metadata
-- Persist to `STORAGE_ENDPOINT` (S3-compatible bucket or local filesystem for dev)
-- Return `{ thumbnail, card, full }` URLs
-
-### 5.3 — Schema
-
-Add an `ImageSet` model or store three URL columns directly on `MenuItem`:
-
-```prisma
-model MenuItem {
-  // ...existing fields...
-  imageThumbnail String?  // 150×150 WebP
-  imageCard      String?  // 600×400 WebP
-  imageFull      String?  // 1200×800 WebP
-}
-```
-
-### 5.4 — Static build integration
-
-At build time, fetch images and include them as static assets, or reference the CDN URLs directly in the static HTML (latter is simpler — images stay on the CDN, no need to bloat the static export).
-
-### 5.5 — Migration
-
-Generate migration for new image columns, run against production DB.
-
----
-
-## Phase 6: Photo Card + Running Total Counter ⏳ *(pending)*
-
-### 6.1 — Card grid layout
-
-Update `app/[locale]/[slug]/menu/page.tsx` to render items in a responsive card grid (`grid-cols-1 sm:2 lg:3`) with:
-
-- `aspect-[3/2]` photo box (uses `imageCard`)
-- Item name (localized), description (localized), price
-- Dietary tags (vegetarian, vegan, gluten-free — locale-independent)
-
-### 6.2 — Running total counter
-
-Small islands-style client component in the menu header:
-
-- Maintains a local `Map<itemId, quantity>` in React state
-- "+" / "–" buttons on each card
-- Header shows total items count and running total price
-- **No API calls** — purely client-side state
-- `"use client"` boundary kept small so the rest of the page stays zero-JS
-
-### 6.3 — Price formatting
-
-Locale-aware: `en` → `$12.50`, `ar` → `١٢٫٥٠ $` (or appropriate Arabic numeral format). Use `Intl.NumberFormat` from the client component.
-
----
+- `components/menu/order-menu.tsx` — responsive card grid (`grid-cols-1 sm:2 lg:3`, `aspect-[3/2]` photo), +/- buttons, sticky order bar with total
+- `components/menu/language-switcher.tsx` extracted to separate file
+- Purely client-side state (no API calls), `Intl.NumberFormat` for locale-aware pricing
 
 ## Phase 7: Deployment (Coolify) ⏳ *(pending)*
 
-### 7.1 — Static Site Service
-- Type: **Static Site**, build: `npm run build`, publish: `out/`
-- Env: `DATABASE_URL`
-- Custom domains: Add each tenant's domain in Coolify UI
+### Overview
 
-### 7.2 — API Server Service
-- Type: **Node.js**, port: 3001
-- Env: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `COOLIFY_BUILD_HOOK`, `STORAGE_ENDPOINT`, `STORAGE_KEY`
+Three services in Coolify:
 
-### 7.3 — PostgreSQL
-- Add PostgreSQL in Coolify, connection string → `DATABASE_URL`
+| Service | Type | Port | Build Command | Start Command | Publish Dir |
+|---|---|---|---|---|---|
+| **Static Site** (Next.js) | Static Site | — | `npm run build` | — | `out/` |
+| **API Server** (Hono) | Node.js | 3001 | `cd api-server && npm install && npx prisma generate` | `cd api-server && npm run start` | — |
+| **PostgreSQL** | Database | 5432 | — | — | — |
 
-### 7.4 — Traefik routing (redirect at proxy level)
+### 7.1 — PostgreSQL (Coolify native database)
 
-Replace the client-side JS redirect in `index.html` with Traefik middleware rules. Each custom domain gets a static redirect before the browser ever downloads a page:
+1. In Coolify, **Resources → Databases → PostgreSQL**.
+2. Name it `restaurant-menu-db`.
+3. Copy the internal connection string — it'll look like:
+   ```
+   postgresql://postgres:randompw@restaurant-menu-db:5432/restaurant-menu-db?schema=public
+   ```
+   This is the value for `DATABASE_URL` in both other services.
+
+### 7.2 — Static Site (Next.js) — Coolify "Static Site"
+
+**Settings:**
+
+| Setting | Value |
+|---|---|
+| Build pack | `Static Site` |
+| Build command | `npm run build` |
+| Publish directory | `out/` |
+| Install command | `npm install` |
+| Base directory | `/` |
+
+**Environment variables:**
+
+```
+DATABASE_URL=postgresql://postgres:...@restaurant-menu-db:5432/restaurant-menu-db?schema=public
+```
+
+> `DATABASE_URL` is required at build time — Prisma runs `prisma generate` and fetches tenant/category data during the static export.
+
+**Domains:**
+
+Add custom domains in Coolify UI → one per tenant. The client-side JS redirect in `out/index.html` handles mapping `hostname → slug`. Add as many as needed:
+
+| Domain | Redirects To |
+|---|---|
+| `menu.valley-group.com` | `/en/valley-group/menu/` |
+| `luigispizzeria.com` | `/en/trattoria-roma/menu/` |
+| `sakurasushi.com` | `/en/sakura-sushi/menu/` |
+
+### 7.3 — API Server (Hono) — Coolify "Node.js"
+
+**Settings:**
+
+| Setting | Value |
+|---|---|
+| Build pack | `Node.js` |
+| Port | `3001` |
+| Start command | `npm run api:start` |
+| Build command | `cd api-server && npm install && npx prisma generate` |
+| Base directory | `/` |
+
+The root `package.json` has a root-level workspace, and the API server lives in `api-server/`. The build/start commands `cd` into that directory. No Dockerfile needed — Coolify's Node.js buildpack auto-detects the port.
+
+**Environment variables:**
+
+```
+DATABASE_URL=postgresql://postgres:...@restaurant-menu-db:5432/restaurant-menu-db?schema=public
+BETTER_AUTH_SECRET=<generate: openssl rand -hex 32>
+BETTER_AUTH_URL=https://api.yourdomain.com
+COOLIFY_BUILD_HOOK=<from Coolify Static Site deployment settings>
+```
+
+- `BETTER_AUTH_SECRET` — a random hex string, generates session tokens
+- `BETTER_AUTH_URL` — must be the public URL of the API server (Coolify auto-assigns `https://api-xxxx.xxxxxx.xyz` or use a custom domain)
+- `COOLIFY_BUILD_HOOK` — found in the Static Site deployment's settings → "Build hook" → copy the URL. This is what the API calls to trigger a rebuild when data changes
+
+**Optional: Custom domain for the API**
+
+In Coolify, add a domain like `api.menuhost.com` to the API Server resource. Then set `BETTER_AUTH_URL=https://api.menuhost.com`.
+
+### 7.4 — Domain routing strategy (MVP)
+
+For the MVP, keep the **client-side JS redirect** in `out/index.html`. The script:
+
+1. Looks up `hostname` in the domain→slug map
+2. Detects browser language (`navigator.language`)
+3. Redirects to `/{locale}/{slug}/menu/`
+
+This is zero-cost (no Traefik config, no edge workers) and works with any number of domains.
+
+**To add a new tenant's domain:**
+
+1. Add the domain to Coolify's Static Site resource (so Traefik routes it there)
+2. Add an entry to the domain map in `app/page.tsx`
+3. Rebuild the site (via build hook or manual deploy)
+
+**Future: Traefik-level redirects**
+
+When the number of domains grows, migrate to Traefik middleware rules to eliminate the JS redirect:
 
 ```yaml
-# docker-compose.yml (Coolify)
+# Applied to the Static Site service in Coolify's docker-compose.yml
 labels:
   - "traefik.http.routers.static.rule=Host(`luigispizzeria.com`)"
   - "traefik.http.middlewares.trattoria-redirect.redirectregex.regex=^/"
   - "traefik.http.middlewares.trattoria-redirect.redirectregex.replacement=/en/trattoria-roma/menu/"
   - "traefik.http.routers.static.middlewares=trattoria-redirect"
-
-  - "traefik.http.routers.static2.rule=Host(`sakurasushi.com`)"
-  - "traefik.http.middlewares.sakura-redirect.redirectregex.regex=^/"
-  - "traefik.http.middlewares.sakura-redirect.redirectregex.replacement=/en/sakura-sushi/menu/"
-  - "traefik.http.routers.static2.middlewares=sakura-redirect"
 ```
 
-Browser language detection: Can be extended per domain (e.g. `sakurasushi.com` redirects to `/ja/sakura-sushi/menu/` if needed via a small edge middleware or by using Coolify's own redirect rules). For the MVP, English is the default; the language switcher on the menu page covers toggling to Arabic.
+Browser language detection can be added via a small edge middleware or Coolify's redirect rules. For now, English is the default; the language switcher handles toggling to Arabic.
 
-The root `index.html` becomes a true 0-JS page (just a `<meta http-equiv="refresh">` fallback or a static landing page).
+### 7.5 — Build hooks (auto-rebuild on data change)
 
-### 7.5 — Build hooks
-- Coolify webhook called by API on data change → site rebuilds (~30s)
+When an admin creates/edits/deletes categories or items, the site needs to rebuild to reflect the changes.
+
+**Flow:**
+
+1. Admin performs CRUD in the API server
+2. API server fires a `POST` to the Coolify build hook URL
+3. Coolify queues a new deployment of the Static Site
+4. After ~30s, the site is updated
+
+**Implementation:**
+
+The endpoint already exists in the plan (see Phase 2.4). Create `api-server/routes/builds.ts`:
+
+```ts
+import { Hono } from "hono"
+import { requireAuth } from "../middleware/auth"
+
+export const builds = new Hono()
+builds.use("*", requireAuth)
+
+builds.post("/trigger", async (c) => {
+  const hookUrl = process.env.COOLIFY_BUILD_HOOK
+  if (!hookUrl) return c.json({ error: "Build hook not configured" }, 500)
+
+  const res = await fetch(hookUrl, { method: "POST" })
+  if (!res.ok) throw new Error(`Hook returned ${res.status}`)
+
+  return c.json({ triggered: true })
+})
+```
+
+**Wiring:** Call this endpoint from the items/categories CRUD routes after any write operation. Use `c.exec()` or a simple `fetch` fire-and-forget inside the route handler. For the MVP, a manual "Rebuild site" button in the admin panel is sufficient — no auto-trigger on every save.
+
+**Manual rebuild button:**
+
+Add a button in the admin sidebar:
+
+```
+Rebuild Site  (calls POST /api/builds/trigger)
+```
+
+This gives the admin control over when the site refreshes, avoiding rebuild storms on every item save.
+
+### 7.6 — Storage for uploaded images
+
+The `POST /api/upload` route currently saves to a local `uploads/` directory. In Coolify:
+
+- **Dev/MVP:** Keep local storage. Coolify's persistent storage mounts (`/data/uploads`) survive container restarts.
+- **Production:** Migrate to an S3-compatible bucket (Backblaze B2, Wasabi, or DigitalOcean Spaces). Set `STORAGE_ENDPOINT`, `STORAGE_KEY`, `STORAGE_BUCKET` env vars.
+
+For the static site, images are served from the API server's URL (or CDN). In the static export, `<img>` tags reference the full URL — no hotlinking needed since images are public.
+
+### 7.7 — One-command deploy checklist
+
+```
+□ 1. Add PostgreSQL in Coolify → copy DATABASE_URL
+□ 2. Create Static Site service → paste DATABASE_URL, set build/publish
+□ 3. Create API Server service → paste DATABASE_URL, set build/start/port
+□ 4. Generate BETTER_AUTH_SECRET → set on API Server
+□ 5. Deploy API Server first → copy its Coolify-assigned URL
+□ 6. Set BETTER_AUTH_URL on API Server to that URL
+□ 7. Copy build hook URL from Static Site → set COOLIFY_BUILD_HOOK on API Server
+□ 8. Deploy Static Site (it needs the API to be running for build? No — static export is independent)
+□ 9. Add custom domains to Static Site in Coolify UI
+□ 10. Run `npx prisma migrate deploy` on the API server (or manually via terminal)
+□ 11. Run `npx tsx api-server/seed-admin.ts` to seed users
+□ 12. Verify: visit public menu + admin login
+```
 
 ---
 
 ## Verification Checklist
 
-- [ ] `npm run build` succeeds
-- [ ] `out/` contains `/{locale}/{slug}/menu/` for all locale×tenant combinations
-- [ ] Each tenant page renders with correct design tokens per locale
-- [ ] English pages have LTR layout, Arabic pages have RTL layout
-- [ ] Category/item names show correct translation per locale
-- [ ] Fallback works: if translation missing, shows English name
-- [ ] Language switcher toggles between `/en/...` and `/ar/...`
+- [x] `npm run build` succeeds
+- [x] `out/` contains `/{locale}/{slug}/menu/` for all locale×tenant combinations
+- [x] Each tenant page renders with correct design tokens per locale
+- [x] English pages have LTR layout, Arabic pages have RTL layout
+- [x] Category/item names show correct translation per locale
+- [x] Fallback works: if translation missing, shows English name
+- [x] Language switcher toggles between `/en/...` and `/ar/...`
 - [ ] Domain redirect is handled at Traefik level (no client-side JS redirect)
-- [ ] Public menu has 0 KB client JavaScript (excluding language switcher and counter components)
-- [ ] API CRUD includes translation upsert endpoints
-- [ ] Image upload resizes + converts to WebP via sharp (3 sizes)
-- [ ] Menu items render in a photo card grid with consistent aspect ratios
-- [ ] Running total counter works client-side with no API calls
-- [ ] Admin login/auth works
-- [ ] Super admin can manage tenants + locale settings
+- [x] Public menu has minimal client JavaScript (language switcher + OrderMenu only)
+- [x] API CRUD includes translation upsert endpoints
+- [x] Image upload resizes + converts to WebP via sharp (3 sizes)
+- [x] Menu items render in a photo card grid with consistent aspect ratios
+- [x] Running total counter works client-side with no API calls
+- [x] Admin login/auth works (better-auth, email/password)
+- [x] Super admin can manage tenants + locale settings
+- [x] Import/export works via JSON file (sidebar Import view, Export button)
+- [x] Admin CRUD includes `financialPrice` field
 - [ ] Mobile responsive, Lighthouse ≥ 95
