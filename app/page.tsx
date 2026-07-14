@@ -2,16 +2,11 @@ import { prisma } from '@/lib/prisma';
 import Script from 'next/script';
 
 export default async function Home() {
-  let tenants: { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];
-  try {
-    tenants = await prisma.tenant.findMany({
-      where: { isActive: true, slug: { not: null } },
-      orderBy: { name: 'asc' },
-      select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
-    }) as typeof tenants;
-  } catch {
-    tenants = [];
-  }
+  const tenants = await prisma.tenant.findMany({
+    where: { isActive: true, slug: { not: null } },
+    orderBy: { name: 'asc' },
+    select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
+  }) as { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];
 
   const domainMap: Record<string, { slug: string; locale: string }> = {};
   for (const t of tenants) {

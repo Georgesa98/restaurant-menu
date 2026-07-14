@@ -3,12 +3,7 @@ import { MenuPage } from '@/components/menu/menu-page';
 import { getAllTenantCategoryCombos, getTenantWithCategory } from '@/lib/queries';
 
 export async function generateStaticParams() {
-  let combos: { slug: string; categorySlug: string }[];
-  try {
-    combos = await getAllTenantCategoryCombos();
-  } catch {
-    return [];
-  }
+  const combos = await getAllTenantCategoryCombos();
   const locales = ['en', 'ar'];
   return locales.flatMap((locale) => combos.map((c) => ({ locale, slug: c.slug, categorySlug: c.categorySlug })));
 }

@@ -3,12 +3,7 @@ import { MenuPage } from '@/components/menu/menu-page';
 import { getAllTenantSlugs, getTenantWithMenu } from '@/lib/queries';
 
 export async function generateStaticParams() {
-  let tenants: { slug: string }[];
-  try {
-    tenants = await getAllTenantSlugs();
-  } catch {
-    return [];
-  }
+  const tenants = await getAllTenantSlugs();
   const locales = ['en', 'ar'];
   return locales.flatMap((locale) => tenants.map((t) => ({ locale, slug: t.slug })));
 }
