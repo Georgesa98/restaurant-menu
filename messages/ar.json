@@ -6,6 +6,11 @@
     "viewAll": "عرض القائمة الكاملة",
     "eyebrow": "مطعم",
     "add": "إضافة",
+    "all": "الكل",
+    "yourOrder": "طلبك",
+    "close": "إغلاق",
+    "emptyOrder": "لم تقم بإضافة عناصر بعد",
+    "total": "المجموع",
     "itemCount": "{count} عناصر",
     "tapToAdd": "اضغط + للإضافة"
   },

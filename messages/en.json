@@ -6,6 +6,11 @@
     "viewAll": "View full menu",
     "eyebrow": "Restaurant",
     "add": "Add",
+    "all": "All",
+    "yourOrder": "Your order",
+    "close": "Close",
+    "emptyOrder": "No items added yet",
+    "total": "Total",
     "itemCount": "{count} {count, plural, one {item} other {items}}",
     "tapToAdd": "Tap + to add more"
   },

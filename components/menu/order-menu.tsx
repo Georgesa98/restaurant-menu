@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TenantData, WithTranslations } from '@/lib/types';
 import { LanguageSwitcher } from './language-switcher';
+import { OrderSheet } from './order-sheet';
 import {
   Coffee,
   CupSoda,
@@ -86,10 +87,9 @@ type Ripple = { id: number; itemId: string; x: number; y: number };
 export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: string }) {
   const tm = useTranslations('menu');
   const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const navRef = useRef<HTMLDivElement | null>(null);
   const isRtl = locale === 'ar';
 
   const categories = useMemo(
@@ -114,6 +114,22 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     }
     return total;
   }, [quantities, tenant.categories]);
+
+  const allItems = useMemo(
+    () =>
+      categories.flatMap((category) => {
+        const catTrans = t(category);
+        return category.items
+          .filter((i) => i.isAvailable)
+          .map((item) => ({ ...item, categoryName: catTrans.name }));
+      }),
+    [categories]
+  );
+
+  const visibleCategories = useMemo(
+    () => (selectedCategory === 'all' ? categories : categories.filter((c) => c.slug === selectedCategory)),
+    [categories, selectedCategory]
+  );
 
   const setQuantity = useCallback((id: string, delta: number) => {
     setQuantities((prev) => {
@@ -143,12 +159,9 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     addRipple(event, itemId);
   }
 
-  function scrollToCategory(slug: string) {
-    const el = sectionRefs.current[slug];
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveCategory(slug);
-    }
+  function selectCategory(slug: string | 'all') {
+    setSelectedCategory(slug);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   return (
@@ -185,6 +198,11 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           overflow: hidden;
           display: flex;
           flex-direction: column;
+        }
+
+        .menu-category {
+          content-visibility: auto;
+          contain-intrinsic-size: 400px;
         }
 
         .menu-category-nav {
@@ -369,6 +387,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           z-index: 30;
           background: var(--primary);
           color: #fff;
+          cursor: pointer;
+          border: none;
         }
 
         .menu-counter-label {
@@ -465,17 +485,24 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         </header>
 
         {/* Category nav */}
-        <nav ref={navRef} className="menu-category-nav nav-scroll-hint">
+        <nav className="menu-category-nav nav-scroll-hint">
           <div className="mx-auto px-4 overflow-x-auto whitespace-nowrap" style={{ maxWidth: '900px' }}>
             <div className="flex py-1">
+              <button
+                type="button"
+                onClick={() => selectCategory('all')}
+                className={`menu-category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
+              >
+                {tm('all')}
+              </button>
               {categories.map((category) => {
                 const catTrans = t(category);
-                const isActive = activeCategory === category.slug;
+                const isActive = selectedCategory === category.slug;
                 return (
                   <button
                     key={category.id}
                     type="button"
-                    onClick={() => scrollToCategory(category.slug)}
+                    onClick={() => selectCategory(category.slug)}
                     className={`menu-category-pill ${isActive ? 'active' : ''}`}
                   >
                     {catTrans.name}
@@ -492,7 +519,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           style={{ maxWidth: '900px' }}
         >
           <div className="space-y-12">
-            {categories.map((category) => {
+            {visibleCategories.map((category) => {
               const catTrans = t(category);
               const items = category.items
                 .filter((i) => i.isAvailable)
@@ -503,9 +530,6 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                 <section
                   key={category.id}
                   id={`cat-${category.slug}`}
-                  ref={(el) => {
-                    sectionRefs.current[category.slug] = el;
-                  }}
                   className="menu-category"
                 >
                   <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
@@ -662,7 +686,12 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
         {/* Sticky bottom counter */}
         {totalItems > 0 && (
-          <div className="menu-counter">
+          <button
+            type="button"
+            onClick={() => setIsSheetOpen(true)}
+            className="menu-counter w-full text-left"
+            aria-label={tm('yourOrder')}
+          >
             <div
               className="mx-auto px-4 py-3 sm:py-3.5 flex items-center justify-between"
               style={{ maxWidth: '900px' }}
@@ -675,8 +704,19 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
               </div>
               <div className="menu-counter-total">{formatPrice(totalPrice, locale)}</div>
             </div>
-          </div>
+          </button>
         )}
+
+        <OrderSheet
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
+          items={allItems}
+          quantities={quantities}
+          onUpdateQuantity={setQuantity}
+          locale={locale}
+          t={tm}
+          tenant={tenant}
+        />
       </main>
     </>
   );
