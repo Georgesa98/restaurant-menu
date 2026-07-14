@@ -1,9 +1,9 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 const endpoint = process.env.STORAGE_ENDPOINT;
 const region = process.env.STORAGE_REGION ?? 'auto';
 const bucket = process.env.STORAGE_BUCKET;
-const publicUrl = process.env.STORAGE_PUBLIC_URL;
 
 function getClient(): S3Client {
   const creds = process.env.STORAGE_ACCESS_KEY_ID
@@ -31,21 +31,33 @@ export async function uploadToBucket(
 ) {
   if (!bucket) throw new Error('STORAGE_BUCKET not configured');
 
-  const baseUrl = publicUrl ? publicUrl.replace(/\/+$/, '') : `${endpoint?.replace(/\/+$/, '')}/${bucket}`;
-
   const results = await Promise.all(
-    variants.map((v) =>
-      s3().send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: `uploads/${tenantId}/${v.key}`,
-          Body: v.buffer,
-          ContentType: v.contentType,
-        }),
-      ).then(() => `${baseUrl}/uploads/${tenantId}/${v.key}`),
-    ),
+    variants.map((v) => {
+      const storageKey = `uploads/${tenantId}/${v.key}`;
+      return s3()
+        .send(
+          new PutObjectCommand({
+            Bucket: bucket,
+            Key: storageKey,
+            Body: v.buffer,
+            ContentType: v.contentType,
+          }),
+        )
+        .then(() => storageKey);
+    }),
   );
 
   const [thumbnail, card, full] = results;
   return { thumbnail, card, full };
+}
+
+export async function streamFromBucket(key: string) {
+  if (!bucket) throw new Error('STORAGE_BUCKET not configured');
+
+  const { Body, ContentType } = await s3().send(
+    new GetObjectCommand({ Bucket: bucket, Key: key }),
+  );
+
+  const stream = Readable.toWeb(Body as Readable);
+  return { stream, contentType: ContentType ?? 'image/webp' };
 }

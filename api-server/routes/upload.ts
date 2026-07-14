@@ -31,11 +31,15 @@ upload.post('/', async (c) => {
     sharp(buffer).resize(1200, 800, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer(),
   ]);
 
-  const urls = await uploadToBucket(tenantId, [
+  const keys = await uploadToBucket(tenantId, [
     { key: `${base}_thumb.webp`, buffer: thumbBuf, contentType: 'image/webp' },
     { key: `${base}_card.webp`, buffer: cardBuf, contentType: 'image/webp' },
     { key: `${base}_full.webp`, buffer: fullBuf, contentType: 'image/webp' },
   ]);
 
-  return c.json(urls);
+  return c.json({
+    thumbnail: `/${keys.thumbnail}`,
+    card: `/${keys.card}`,
+    full: `/${keys.full}`,
+  });
 });
