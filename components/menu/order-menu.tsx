@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import type { TenantData, WithTranslations } from '@/lib/types';
 import { LanguageSwitcher } from './language-switcher';
 import {
@@ -34,7 +35,9 @@ function t(item: WithTranslations<{ name: string; description: string | null }>)
 function formatPrice(price: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'SYP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(price);
 }
 
@@ -81,6 +84,7 @@ function retinaSrc(cardSrc: string | null): string | null {
 type Ripple = { id: number; itemId: string; x: number; y: number };
 
 export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: string }) {
+  const tm = useTranslations('menu');
   const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [ripples, setRipples] = useState<Ripple[]>([]);
@@ -433,7 +437,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
             />
           ) : (
             <>
-              <span className="menu-eyebrow block mb-2">Restaurant</span>
+              <span className="menu-eyebrow block mb-2">{tm('eyebrow')}</span>
               <h1
                 className="text-[48px] sm:text-5xl leading-none mb-3"
                 style={{
@@ -618,7 +622,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                   aria-label="Add item"
                                 >
                                   <Plus size={14} strokeWidth={2} />
-                                  <span>Add</span>
+                                  <span>{tm('add')}</span>
                                   {ripples
                                     .filter((r) => r.itemId === item.id)
                                     .map((r) => (
@@ -665,9 +669,9 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
             >
               <div>
                 <div className="menu-counter-label">
-                  {totalItems} item{totalItems !== 1 ? 's' : ''}
+                  {tm('itemCount', { count: totalItems })}
                 </div>
-                <div className="menu-counter-sub">Tap + to add more</div>
+                <div className="menu-counter-sub">{tm('tapToAdd')}</div>
               </div>
               <div className="menu-counter-total">{formatPrice(totalPrice, locale)}</div>
             </div>

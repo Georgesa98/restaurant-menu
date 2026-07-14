@@ -85,7 +85,7 @@ function SortableCard({
       <p className="text-sm font-medium truncate mb-1">{item.name}</p>
       {item.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold tabular-nums">${Number(item.price).toFixed(2)}</span>
+        <span className="text-sm font-semibold tabular-nums">SYP {Number(item.price).toLocaleString('en-US')}</span>
         <div className="flex gap-1">
           <Button variant="ghost" size="xs" onClick={() => onEdit(item)}>
             <Pencil className="size-3.5" />
@@ -364,11 +364,11 @@ export function ItemsView() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Consumer price</Label>
+                  <Label>Consumer price (SYP)</Label>
                   <Input name="price" type="number" step="0.01" defaultValue={editing?.price} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Financial price</Label>
+                  <Label>Financial price (SYP)</Label>
                   <Input name="financialPrice" type="number" step="0.01" defaultValue={editing?.financialPrice} />
                 </div>
               </div>

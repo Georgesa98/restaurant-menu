@@ -3,7 +3,11 @@
     "title": "Menu",
     "loading": "Loading menu...",
     "noItems": "No items available",
-    "viewAll": "View full menu"
+    "viewAll": "View full menu",
+    "eyebrow": "Restaurant",
+    "add": "Add",
+    "itemCount": "{count} {count, plural, one {item} other {items}}",
+    "tapToAdd": "Tap + to add more"
   },
   "nav": {
     "home": "Menu",

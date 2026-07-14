@@ -3,19 +3,19 @@ import { prisma } from '../lib/prisma';
 import bcrypt from 'bcryptjs';
 
 const categoriesData = [
-  { nameAr: 'مشروبات ساخنة', nameEn: 'Hot Drinks', slug: 'hot-drinks', order: 1 },
-  { nameAr: 'مشروبات باردة', nameEn: 'Cold Drinks', slug: 'cold-drinks', order: 2 },
-  { nameAr: 'غربي', nameEn: 'Western', slug: 'western', order: 3 },
-  { nameAr: 'كريبات', nameEn: 'Crepes', slug: 'crepes', order: 4 },
-  { nameAr: 'شرقي', nameEn: 'Oriental', slug: 'oriental', order: 5 },
-  { nameAr: 'مشروبات كحولية', nameEn: 'Alcoholic Drinks', slug: 'alcoholic-drinks', order: 6 },
-  { nameAr: 'بيتزا', nameEn: 'Pizza', slug: 'pizza', order: 7 },
-  { nameAr: 'باريستا', nameEn: 'Barista', slug: 'barista', order: 8 },
-  { nameAr: 'مقبلات باردة', nameEn: 'Cold Appetizers', slug: 'cold-appetizers', order: 9 },
-  { nameAr: 'مقبلات ساخنة', nameEn: 'Hot Appetizers', slug: 'hot-appetizers', order: 10 },
-  { nameAr: 'سلطات', nameEn: 'Salads', slug: 'salads', order: 11 },
-  { nameAr: 'باستا', nameEn: 'Pasta', slug: 'pasta', order: 12 },
-  { nameAr: 'اراكيل', nameEn: 'Hookah', slug: 'hookah', order: 14 },
+  { nameAr: 'مشروبات ساخنة', nameEn: 'Hot Drinks', slug: 'hot-drinks', order: 1, descriptionAr: 'مشروباتنا الساخنة الطازجة لبداية يومك', descriptionEn: 'Fresh hot beverages to start your day' },
+  { nameAr: 'مشروبات باردة', nameEn: 'Cold Drinks', slug: 'cold-drinks', order: 2, descriptionAr: 'مشروبات باردة منعشة وعصائر طبيعية', descriptionEn: 'Refreshing cold drinks and fresh juices' },
+  { nameAr: 'غربي', nameEn: 'Western', slug: 'western', order: 3, descriptionAr: 'أطباق غربية بنكهة عصرية', descriptionEn: 'Modern Western dishes with a twist' },
+  { nameAr: 'كريبات', nameEn: 'Crepes', slug: 'crepes', order: 4, descriptionAr: 'كريبات شهية حلوة وم salty', descriptionEn: 'Delicious sweet and savoury crepes' },
+  { nameAr: 'شرقي', nameEn: 'Oriental', slug: 'oriental', order: 5, descriptionAr: 'أشهى المأكولات الشرقية والمشاوي', descriptionEn: 'Finest Levantine cuisine and grilled meats' },
+  { nameAr: 'مشروبات كحولية', nameEn: 'Alcoholic Drinks', slug: 'alcoholic-drinks', order: 6, descriptionAr: 'مشروبات كحولية متنوعة', descriptionEn: 'Selected alcoholic beverages' },
+  { nameAr: 'بيتزا', nameEn: 'Pizza', slug: 'pizza', order: 7, descriptionAr: 'بيتزا طازجة على أصولها', descriptionEn: 'Authentic oven-baked pizzas' },
+  { nameAr: 'باريستا', nameEn: 'Barista', slug: 'barista', order: 8, descriptionAr: 'مشروبات باريستا وكوكتيلات مميزة', descriptionEn: 'Speciality barista drinks and cocktails' },
+  { nameAr: 'مقبلات باردة', nameEn: 'Cold Appetizers', slug: 'cold-appetizers', order: 9, descriptionAr: 'مقبلات باردة تقليدية بنكهة أصيلة', descriptionEn: 'Traditional cold mezza with authentic flavours' },
+  { nameAr: 'مقبلات ساخنة', nameEn: 'Hot Appetizers', slug: 'hot-appetizers', order: 10, descriptionAr: 'مقبلات ساخنة متنوعة', descriptionEn: 'A variety of hot starters' },
+  { nameAr: 'سلطات', nameEn: 'Salads', slug: 'salads', order: 11, descriptionAr: 'سلطات طازجة وصحية', descriptionEn: 'Fresh and healthy salads' },
+  { nameAr: 'باستا', nameEn: 'Pasta', slug: 'pasta', order: 12, descriptionAr: 'باستا مطهوة بحب', descriptionEn: 'Pasta made with love' },
+  { nameAr: 'اراكيل', nameEn: 'Hookah', slug: 'hookah', order: 14, descriptionAr: 'أجود أنواع الأركيلة', descriptionEn: 'Premium hookah selection' },
 ] as const;
 
 type SeedItem = {
@@ -314,6 +314,7 @@ async function main() {
         tenantId: tenant.id,
         name: cat.nameAr,
         slug: cat.slug,
+        description: cat.descriptionAr,
         displayOrder: cat.order,
       },
     });
@@ -323,7 +324,8 @@ async function main() {
   const categoryTranslationData: { categoryId: string; locale: string; name: string; description: string | null }[] = [];
   for (const cat of categoriesData) {
     const entry = categoryMap.get(cat.nameAr)!;
-    categoryTranslationData.push({ categoryId: entry.id, locale: 'en', name: cat.nameEn, description: '' });
+    categoryTranslationData.push({ categoryId: entry.id, locale: 'en', name: cat.nameEn, description: cat.descriptionEn });
+    categoryTranslationData.push({ categoryId: entry.id, locale: 'ar', name: cat.nameAr, description: cat.descriptionAr });
   }
   await prisma.categoryTranslation.createMany({ data: categoryTranslationData });
 
