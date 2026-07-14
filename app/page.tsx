@@ -3,7 +3,7 @@ import Script from 'next/script';
 
 export default async function Home() {
   const tenants = await prisma.tenant.findMany({
-    where: { isActive: true },
+    where: { isActive: true, slug: { not: null } },
     orderBy: { name: 'asc' },
     select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
   }) as { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];

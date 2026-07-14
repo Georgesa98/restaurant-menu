@@ -13,8 +13,8 @@ function menuInclude(locale: string) {
 }
 
 export async function getActiveTenants(): Promise<TenantCard[]> {
-  return prisma.tenant.findMany({
-    where: { isActive: true },
+  const rows = await prisma.tenant.findMany({
+    where: { isActive: true, slug: { not: null } },
     orderBy: { name: 'asc' },
     select: {
       slug: true,
@@ -25,6 +25,7 @@ export async function getActiveTenants(): Promise<TenantCard[]> {
       defaultLocale: true,
     },
   });
+  return rows as TenantCard[];
 }
 
 export async function getTenantWithMenu(slug: string, locale: string): Promise<TenantData | null> {
@@ -56,15 +57,16 @@ export async function getTenantWithCategory(
 }
 
 export async function getAllTenantSlugs(): Promise<{ slug: string }[]> {
-  return prisma.tenant.findMany({
-    where: { isActive: true },
+  const rows = await prisma.tenant.findMany({
+    where: { isActive: true, slug: { not: null } },
     select: { slug: true },
   });
+  return rows as { slug: string }[];
 }
 
 export async function getAllTenantCategoryCombos(): Promise<{ slug: string; categorySlug: string }[]> {
   const tenants = await prisma.tenant.findMany({
-    where: { isActive: true },
+    where: { isActive: true, slug: { not: null } },
     select: {
       slug: true,
       categories: {
@@ -73,5 +75,7 @@ export async function getAllTenantCategoryCombos(): Promise<{ slug: string; cate
       },
     },
   });
-  return tenants.flatMap((t) => t.categories.map((c) => ({ slug: t.slug, categorySlug: c.slug })));
+  return tenants.flatMap((t) =>
+    t.categories.map((c) => ({ slug: t.slug as string, categorySlug: c.slug })),
+  );
 }
