@@ -35,6 +35,7 @@ function tName(
 export function OrderSheet({
   isOpen,
   onClose,
+  onClearOrder,
   items,
   quantities,
   onUpdateQuantity,
@@ -44,6 +45,7 @@ export function OrderSheet({
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onClearOrder: () => void;
   items: SheetItem[];
   quantities: Map<string, number>;
   onUpdateQuantity: (id: string, delta: number) => void;
@@ -100,15 +102,26 @@ export function OrderSheet({
               {totalItems} {t('itemCount', { count: totalItems })}
             </p>
           </div>
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={onClose}
-            className="order-sheet-close"
-            aria-label={t('close')}
-          >
-            <X size={18} strokeWidth={2} />
-          </button>
+          <div className="order-sheet-actions">
+            {ordered.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearOrder}
+                className="order-sheet-clear"
+              >
+                {t('clearOrder')}
+              </button>
+            )}
+            <button
+              ref={closeRef}
+              type="button"
+              onClick={onClose}
+              className="order-sheet-close"
+              aria-label={t('close')}
+            >
+              <X size={18} strokeWidth={2} />
+            </button>
+          </div>
         </div>
 
         <div className="order-sheet-body">
@@ -265,6 +278,36 @@ export function OrderSheet({
         .order-sheet-close:focus-visible {
           outline: 2px solid ${tenant.primaryColor};
           outline-offset: 2px;
+        }
+
+        .order-sheet-actions {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .order-sheet-clear {
+          font-family: ${tenant.bodyFont};
+          font-size: 12px;
+          font-weight: 500;
+          color: ${tenant.accentColor};
+          background: transparent;
+          border: none;
+          padding: 6px 8px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: opacity 120ms ease;
+        }
+
+        .order-sheet-clear:hover {
+          opacity: 0.75;
+        }
+
+        .order-sheet-clear:focus-visible {
+          outline: 2px solid ${tenant.primaryColor};
+          outline-offset: 2px;
+          border-radius: 4px;
         }
 
         .order-sheet-body {

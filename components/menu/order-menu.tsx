@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TenantData, WithTranslations } from '@/lib/types';
 import { LanguageSwitcher } from './language-switcher';
@@ -84,13 +84,65 @@ function retinaSrc(cardSrc: string | null): string | null {
 
 type Ripple = { id: number; itemId: string; x: number; y: number };
 
+function getStorageKey(slug: string) {
+  return `menu-order:${slug}`;
+}
+
+function loadQuantities(slug: string, validIds: Set<string>): Map<string, number> {
+  if (typeof window === 'undefined') return new Map();
+  try {
+    const raw = localStorage.getItem(getStorageKey(slug));
+    if (!raw) return new Map();
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    const map = new Map<string, number>();
+    for (const [id, qty] of Object.entries(parsed)) {
+      if (validIds.has(id) && typeof qty === 'number' && qty > 0) {
+        map.set(id, qty);
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+function saveQuantities(slug: string, quantities: Map<string, number>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const record: Record<string, number> = {};
+    for (const [id, qty] of quantities) {
+      if (qty > 0) record[id] = qty;
+    }
+    localStorage.setItem(getStorageKey(slug), JSON.stringify(record));
+  } catch {
+    // ignore storage errors (private mode, etc.)
+  }
+}
+
 export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: string }) {
   const tm = useTranslations('menu');
-  const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
+
+  const allItemIds = useMemo(
+    () => new Set(tenant.categories.flatMap((c) => c.items.map((i) => i.id))),
+    [tenant.categories]
+  );
+
+  const [quantities, setQuantities] = useState<Map<string, number>>(() =>
+    loadQuantities(tenant.slug, allItemIds)
+  );
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const isRtl = locale === 'ar';
+
+  useEffect(() => {
+    saveQuantities(tenant.slug, quantities);
+  }, [tenant.slug, quantities]);
+
+  const clearOrder = useCallback(() => {
+    setQuantities(new Map());
+    setIsSheetOpen(false);
+  }, []);
 
   const categories = useMemo(
     () =>
@@ -452,20 +504,20 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           {tenant.logoUrl ? (
             <img
               src={tenant.logoUrl}
-              alt={tenant.name}
+              alt="Valley Star"
               className="h-16 mx-auto mb-4 object-contain"
             />
           ) : (
             <>
-              <span className="menu-eyebrow block mb-2">{tm('eyebrow')}</span>
+              <span className="menu-eyebrow block mb-2">Restaurant</span>
               <h1
                 className="text-[48px] sm:text-5xl leading-none mb-3"
                 style={{
-                  fontFamily: isRtl ? 'var(--font-heading)' : 'var(--font-script)',
+                  fontFamily: 'var(--font-script)',
                   color: 'var(--primary)',
                 }}
               >
-                {tenant.name}
+                Valley Star
               </h1>
             </>
           )}
@@ -710,6 +762,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         <OrderSheet
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
+          onClearOrder={clearOrder}
           items={allItems}
           quantities={quantities}
           onUpdateQuantity={setQuantity}

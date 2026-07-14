@@ -11,6 +11,7 @@
     "close": "Close",
     "emptyOrder": "No items added yet",
     "total": "Total",
+    "clearOrder": "Clear order",
     "itemCount": "{count} {count, plural, one {item} other {items}}",
     "tapToAdd": "Tap + to add more"
   },

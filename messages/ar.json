@@ -11,6 +11,7 @@
     "close": "إغلاق",
     "emptyOrder": "لم تقم بإضافة عناصر بعد",
     "total": "المجموع",
+    "clearOrder": "مسح الطلب",
     "itemCount": "{count} عناصر",
     "tapToAdd": "اضغط + للإضافة"
   },
