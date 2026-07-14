@@ -25,8 +25,8 @@
   --color-sidebar-border: #2a2c2a;
   --color-amber: #dfaa4a;
   --color-amber-foreground: #1c1814;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-heading: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Jost', 'Inter', system-ui, sans-serif;
+  --font-heading: 'Playfair Display', Georgia, serif;
 }
 
 :root {

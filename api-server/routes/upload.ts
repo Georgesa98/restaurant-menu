@@ -25,15 +25,18 @@ upload.post('/', async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   const base = crypto.randomUUID();
 
-  const [thumbBuf, cardBuf, fullBuf] = await Promise.all([
+  // Crop to 4:3, generate card (~400w) and retina (~800w) WebP sizes.
+  const [thumbBuf, cardBuf, retinaBuf, fullBuf] = await Promise.all([
     sharp(buffer).resize(150, 150, { fit: 'cover', position: 'center' }).webp({ quality: 80 }).toBuffer(),
-    sharp(buffer).resize(600, 400, { fit: 'cover', position: 'center' }).webp({ quality: 82 }).toBuffer(),
-    sharp(buffer).resize(1200, 800, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer(),
+    sharp(buffer).resize(400, 300, { fit: 'cover', position: 'center' }).webp({ quality: 80 }).toBuffer(),
+    sharp(buffer).resize(800, 600, { fit: 'cover', position: 'center' }).webp({ quality: 80 }).toBuffer(),
+    sharp(buffer).resize(1200, 900, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 82 }).toBuffer(),
   ]);
 
   const keys = await uploadToBucket(tenantId, [
     { key: `${base}_thumb.webp`, buffer: thumbBuf, contentType: 'image/webp' },
     { key: `${base}_card.webp`, buffer: cardBuf, contentType: 'image/webp' },
+    { key: `${base}_card@2x.webp`, buffer: retinaBuf, contentType: 'image/webp' },
     { key: `${base}_full.webp`, buffer: fullBuf, contentType: 'image/webp' },
   ]);
 
