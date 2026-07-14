@@ -51,7 +51,7 @@ export type TenantData = {
 };
 
 export type TenantCard = {
-  slug: string;
+  slug: string | null;
   name: string;
   description: string | null;
   primaryColor: string;
