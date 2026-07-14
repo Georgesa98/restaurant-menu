@@ -1,28 +1,18 @@
 import { Hono } from 'hono';
 import sharp from 'sharp';
 import path from 'path';
-import fs from 'fs/promises';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
 import { requireAuth } from '../middleware/auth';
+import { uploadToBucket } from '../../lib/storage';
 import type { Variables } from '../types';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-
-async function ensureDir() {
-  try {
-    await fs.mkdir(UPLOADS_DIR, { recursive: true });
-  } catch {}
-}
 
 export const upload = new Hono<{ Variables: Variables }>();
 
 upload.use('*', requireAuth);
 
 upload.post('/', async (c) => {
-  await ensureDir();
+  const tenantId = c.get('userTenantId');
+  if (!tenantId) return c.json({ error: 'Tenant not found' }, 400);
 
   const formData = await c.req.raw.formData();
   const file = formData.get('file');
@@ -35,34 +25,17 @@ upload.post('/', async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   const base = crypto.randomUUID();
 
-  const thumbnail = `${base}_thumb.webp`;
-  const card = `${base}_card.webp`;
-  const full = `${base}_full.webp`;
-
-  await Promise.all([
-    sharp(buffer)
-      .resize(150, 150, { fit: 'cover', position: 'center' })
-      .webp({ quality: 80 })
-      .toFile(path.join(UPLOADS_DIR, thumbnail)),
-
-    sharp(buffer)
-      .resize(600, 400, { fit: 'cover', position: 'center' })
-      .webp({ quality: 82 })
-      .toFile(path.join(UPLOADS_DIR, card)),
-
-    sharp(buffer)
-      .resize(1200, 800, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toFile(path.join(UPLOADS_DIR, full)),
+  const [thumbBuf, cardBuf, fullBuf] = await Promise.all([
+    sharp(buffer).resize(150, 150, { fit: 'cover', position: 'center' }).webp({ quality: 80 }).toBuffer(),
+    sharp(buffer).resize(600, 400, { fit: 'cover', position: 'center' }).webp({ quality: 82 }).toBuffer(),
+    sharp(buffer).resize(1200, 800, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toBuffer(),
   ]);
 
-  const baseUrl = process.env.STORAGE_ENDPOINT
-    ? `${process.env.STORAGE_ENDPOINT.replace(/\/+$/, '')}/uploads`
-    : `/uploads`;
+  const urls = await uploadToBucket(tenantId, [
+    { key: `${base}_thumb.webp`, buffer: thumbBuf, contentType: 'image/webp' },
+    { key: `${base}_card.webp`, buffer: cardBuf, contentType: 'image/webp' },
+    { key: `${base}_full.webp`, buffer: fullBuf, contentType: 'image/webp' },
+  ]);
 
-  return c.json({
-    thumbnail: `${baseUrl}/${thumbnail}`,
-    card: `${baseUrl}/${card}`,
-    full: `${baseUrl}/${full}`,
-  });
+  return c.json(urls);
 });

@@ -32,9 +32,17 @@ app.route('/api/export', exportData);
 app.route('/api/import', importData);
 app.route('/api/builds', builds);
 
-app.use('/uploads/*', async (c, next) => {
+app.get('/*', async (c) => {
   const { serveStatic } = await import('@hono/node-server/serve-static');
-  return serveStatic({ root: './' })(c, next);
+  const res = await serveStatic({ root: './out' })(c, () => Promise.resolve());
+  if (res) return res;
+  const { readFile } = await import('fs/promises');
+  try {
+    const html = await readFile('./out/index.html', 'utf-8');
+    return c.html(html);
+  } catch {
+    return c.notFound();
+  }
 });
 
 app.notFound((c) => c.json({ error: 'Not found', path: c.req.path }, 404));
