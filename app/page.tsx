@@ -6,7 +6,7 @@ export default async function Home() {
     where: { isActive: true },
     orderBy: { name: 'asc' },
     select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
-  });
+  }) as { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];
 
   const domainMap: Record<string, { slug: string; locale: string }> = {};
   for (const t of tenants) {
