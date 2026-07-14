@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import type { TenantData, WithTranslations } from '@/lib/types';
 import { LanguageSwitcher } from './language-switcher';
 import {
@@ -16,6 +16,8 @@ import {
   Cookie,
   UtensilsCrossed,
   Wind,
+  Minus,
+  Plus,
 } from 'lucide-react';
 
 function t(item: WithTranslations<{ name: string; description: string | null }>): {
@@ -27,12 +29,6 @@ function t(item: WithTranslations<{ name: string; description: string | null }>)
     name: tr?.name ?? item.name,
     description: tr?.description ?? item.description,
   };
-}
-
-function spaceToPx(space: string): string {
-  if (space === 'compact') return '12px';
-  if (space === 'spacious') return '24px';
-  return '16px';
 }
 
 function formatPrice(price: number, locale: string): string {
@@ -82,13 +78,14 @@ function retinaSrc(cardSrc: string | null): string | null {
   return cardSrc.replace('_card.webp', '_card@2x.webp');
 }
 
+type Ripple = { id: number; itemId: string; x: number; y: number };
+
 export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: string }) {
   const [quantities, setQuantities] = useState<Map<string, number>>(new Map());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [ripples, setRipples] = useState<Ripple[]>([]);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-
-  const space = spaceToPx(tenant.spacing);
-  const gridCols = tenant.menuLayout === 'auto-fit' ? 'repeat(auto-fit, minmax(180px, 1fr))' : '1fr';
+  const navRef = useRef<HTMLDivElement | null>(null);
   const isRtl = locale === 'ar';
 
   const categories = useMemo(
@@ -114,7 +111,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     return total;
   }, [quantities, tenant.categories]);
 
-  function setQuantity(id: string, delta: number) {
+  const setQuantity = useCallback((id: string, delta: number) => {
     setQuantities((prev) => {
       const next = new Map(prev);
       const current = next.get(id) ?? 0;
@@ -123,6 +120,23 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
       else next.set(id, updated);
       return next;
     });
+  }, []);
+
+  function addRipple(event: React.MouseEvent<HTMLButtonElement>, itemId: string) {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const id = Date.now() + Math.random();
+    setRipples((prev) => [...prev, { id, itemId, x, y }]);
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== id));
+    }, 500);
+  }
+
+  function handleIncrement(event: React.MouseEvent<HTMLButtonElement>, itemId: string) {
+    setQuantity(itemId, 1);
+    addRipple(event, itemId);
   }
 
   function scrollToCategory(slug: string) {
@@ -152,9 +166,6 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           --radius-md: ${tenant.borderRadiusMd};
           --radius-lg: ${tenant.borderRadiusLg};
           --shadow: ${tenant.shadow};
-          --card-style: ${tenant.cardStyle};
-          --menu-grid: ${gridCols};
-          --space: ${space};
         }
 
         .menu-page {
@@ -184,6 +195,27 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           display: none;
         }
 
+        .nav-scroll-hint {
+          position: relative;
+        }
+
+        .nav-scroll-hint::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 40px;
+          background: linear-gradient(to left, var(--bg), transparent);
+          pointer-events: none;
+        }
+
+        [dir='rtl'] .nav-scroll-hint::after {
+          right: auto;
+          left: 0;
+          background: linear-gradient(to right, var(--bg), transparent);
+        }
+
         .menu-category-pill {
           flex: 0 0 auto;
           font-family: var(--font-body);
@@ -191,7 +223,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           font-weight: 500;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          padding: 10px 0;
+          padding: 12px 0;
           margin: 0 14px;
           color: var(--text-muted);
           border-bottom: 2px solid transparent;
@@ -215,7 +247,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
         .menu-section-header {
           font-family: var(--font-heading);
-          font-size: 19px;
+          font-size: 20px;
           font-weight: 500;
           font-style: italic;
           color: var(--primary);
@@ -224,7 +256,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
         .menu-eyebrow {
           font-family: var(--font-body);
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 500;
           letter-spacing: 0.35em;
           text-transform: uppercase;
@@ -233,7 +265,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
         .menu-item-name {
           font-family: var(--font-body);
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 500;
           color: var(--primary);
           line-height: 1.25;
@@ -257,33 +289,74 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           color: var(--accent-text);
         }
 
-        .qty-btn {
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
+        .stepper {
+          display: inline-flex;
+          align-items: center;
+          border: 0.5px solid #C9C0B2;
+          border-radius: 999px;
+          background: var(--surface);
+          overflow: hidden;
+          height: 36px;
+        }
+
+        .stepper-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0;
+          width: 36px;
+          height: 36px;
+          border: none;
+          background: transparent;
+          color: var(--primary);
           cursor: pointer;
-          transition: background 120ms ease, color 120ms ease;
+          position: relative;
+          overflow: hidden;
+          transition: background 120ms ease;
         }
 
-        .qty-btn:focus-visible {
+        .stepper-btn:focus-visible {
           outline: 2px solid var(--primary);
           outline-offset: 2px;
+          z-index: 1;
         }
 
-        .qty-btn-dec {
-          background: transparent;
-          border: 0.5px solid #C9C0B2;
-          color: var(--primary);
-        }
-
-        .qty-btn-inc {
+        .stepper-btn.add {
           background: var(--primary);
-          border: 0.5px solid var(--primary);
           color: var(--bg);
+          width: 56px;
+          gap: 4px;
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .stepper-count {
+          min-width: 2ch;
+          text-align: center;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--primary);
+          padding: 0 4px;
+        }
+
+        .ripple {
+          position: absolute;
+          width: 8px;
+          height: 8px;
+          background: var(--accent);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(1);
+          animation: ripple-grow 500ms ease-out forwards;
+          pointer-events: none;
+          opacity: 0.6;
+        }
+
+        @keyframes ripple-grow {
+          to {
+            transform: translate(-50%, -50%) scale(12);
+            opacity: 0;
+          }
         }
 
         .menu-counter {
@@ -296,7 +369,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
         .menu-counter-label {
           color: #B7BEC2;
-          font-size: 13px;
+          font-size: 14px;
+          font-weight: 500;
         }
 
         .menu-counter-sub {
@@ -306,7 +380,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
         .menu-counter-total {
           font-family: var(--font-body);
-          font-size: 20px;
+          font-size: 22px;
           font-weight: 500;
           color: var(--accent);
         }
@@ -315,17 +389,81 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           color: var(--accent);
         }
 
+        @media (min-width: 480px) {
+          .menu-item-name {
+            font-size: 14px;
+          }
+
+          .stepper {
+            height: 28px;
+          }
+
+          .stepper-btn {
+            width: 28px;
+            height: 28px;
+          }
+
+          .stepper-btn.add {
+            width: 52px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ripple {
+            animation: none;
+            opacity: 0;
+          }
+        }
+
         ${tenant.customCss ?? ''}
       `}</style>
 
       <main className="menu-page min-h-dvh" dir={isRtl ? 'rtl' : 'ltr'}>
+        {/* Hero header */}
+        <header className="relative text-center px-4 pt-8 pb-6" style={{ background: 'var(--bg)' }}>
+          <div className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'}`}>
+            <LanguageSwitcher locale={locale} slug={tenant.slug} />
+          </div>
+
+          {tenant.logoUrl ? (
+            <img
+              src={tenant.logoUrl}
+              alt={tenant.name}
+              className="h-16 mx-auto mb-4 object-contain"
+            />
+          ) : (
+            <>
+              <span className="menu-eyebrow block mb-2">Restaurant</span>
+              <h1
+                className="text-[48px] sm:text-5xl leading-none mb-3"
+                style={{
+                  fontFamily: isRtl ? 'var(--font-heading)' : 'var(--font-script)',
+                  color: 'var(--primary)',
+                }}
+              >
+                {tenant.name}
+              </h1>
+            </>
+          )}
+
+          {tenant.description && (
+            <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
+              {tenant.description}
+            </p>
+          )}
+
+          {(tenant.address || tenant.phone) && (
+            <div className="mt-3 text-xs space-y-1" style={{ color: 'var(--text-muted)' }}>
+              {tenant.address && <p>{tenant.address}</p>}
+              {tenant.phone && <p>{tenant.phone}</p>}
+            </div>
+          )}
+        </header>
+
         {/* Category nav */}
-        <nav className="menu-category-nav">
-          <div
-            className="mx-auto px-4 overflow-x-auto whitespace-nowrap"
-            style={{ maxWidth: '900px' }}
-          >
-            <div className="flex py-2">
+        <nav ref={navRef} className="menu-category-nav nav-scroll-hint">
+          <div className="mx-auto px-4 overflow-x-auto whitespace-nowrap" style={{ maxWidth: '900px' }}>
+            <div className="flex py-1">
               {categories.map((category) => {
                 const catTrans = t(category);
                 const isActive = activeCategory === category.slug;
@@ -344,51 +482,11 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           </div>
         </nav>
 
-        <div className="mx-auto px-4 py-8" style={{ maxWidth: '900px' }}>
-          {/* Language Switcher */}
-          <div className={`mb-6 ${isRtl ? 'text-left' : 'text-right'}`}>
-            <LanguageSwitcher locale={locale} slug={tenant.slug} />
-          </div>
-
-          {/* Hero header */}
-          <header className="text-center mb-10">
-            {tenant.logoUrl ? (
-              <img
-                src={tenant.logoUrl}
-                alt={tenant.name}
-                className="h-16 mx-auto mb-4 object-contain"
-              />
-            ) : (
-              <>
-                <span className="menu-eyebrow block mb-2">Restaurant</span>
-                <h1
-                  className="text-5xl leading-none mb-3"
-                  style={{
-                    fontFamily: isRtl ? 'var(--font-heading)' : 'var(--font-script)',
-                    color: 'var(--primary)',
-                  }}
-                >
-                  {tenant.name}
-                </h1>
-              </>
-            )}
-            {tenant.description && (
-              <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
-                {tenant.description}
-              </p>
-            )}
-            {(tenant.address || tenant.phone) && (
-              <div
-                className="mt-3 text-xs space-y-1"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tenant.address && <p>{tenant.address}</p>}
-                {tenant.phone && <p>{tenant.phone}</p>}
-              </div>
-            )}
-          </header>
-
-          {/* Categories */}
+        {/* Categories */}
+        <div
+          className="mx-auto px-4 py-6 sm:py-8"
+          style={{ maxWidth: '900px' }}
+        >
           <div className="space-y-12">
             {categories.map((category) => {
               const catTrans = t(category);
@@ -411,12 +509,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                   </div>
 
                   <div
-                    className="menu-items-grid"
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: gridCols,
-                      gap: '14px',
-                    }}
+                    className="menu-items-grid grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                    style={{ gap: '14px' }}
                   >
                     {items.map((item) => {
                       const itemTrans = t(item);
@@ -453,11 +547,11 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                 borderRadius: `${tenant.borderRadiusLg} ${tenant.borderRadiusLg} 0 0`,
                               }}
                             >
-                              <Icon className="placeholder-icon" size={40} strokeWidth={1.2} />
+                              <Icon className="placeholder-icon" size={36} strokeWidth={1.2} />
                             </div>
                           )}
 
-                          <div className="flex flex-col p-3" style={{ padding: '12px 14px 14px' }}>
+                          <div className="flex flex-col" style={{ padding: '12px 14px 14px' }}>
                             <div className="flex items-start justify-between gap-2">
                               <h3 className="menu-item-name truncate">{itemTrans.name}</h3>
                               <span className="menu-item-price whitespace-nowrap shrink-0">
@@ -486,33 +580,56 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                               </div>
                             )}
 
-                            <div className="flex items-center gap-2 mt-auto pt-3">
-                              {qty > 0 && (
-                                <>
+                            <div className="mt-auto pt-3 flex" style={{ justifyContent: isRtl ? 'flex-start' : 'flex-end' }}>
+                              {qty > 0 ? (
+                                <div className="stepper">
                                   <button
                                     type="button"
                                     onClick={() => setQuantity(item.id, -1)}
-                                    className="qty-btn qty-btn-dec"
+                                    className="stepper-btn"
                                     aria-label="Decrease quantity"
                                   >
-                                    −
+                                    <Minus size={14} strokeWidth={2} />
                                   </button>
-                                  <span
-                                    className="text-xs font-medium w-4 text-center tabular-nums"
-                                    style={{ color: 'var(--primary)' }}
+                                  <span className="stepper-count">{qty}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleIncrement(e, item.id)}
+                                    className="stepper-btn"
+                                    aria-label="Increase quantity"
                                   >
-                                    {qty}
-                                  </span>
-                                </>
+                                    <Plus size={14} strokeWidth={2} />
+                                    {ripples
+                                      .filter((r) => r.itemId === item.id)
+                                      .map((r) => (
+                                        <span
+                                          key={r.id}
+                                          className="ripple"
+                                          style={{ left: r.x, top: r.y }}
+                                        />
+                                      ))}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleIncrement(e, item.id)}
+                                  className="stepper-btn add"
+                                  aria-label="Add item"
+                                >
+                                  <Plus size={14} strokeWidth={2} />
+                                  <span>Add</span>
+                                  {ripples
+                                    .filter((r) => r.itemId === item.id)
+                                    .map((r) => (
+                                      <span
+                                        key={r.id}
+                                        className="ripple"
+                                        style={{ left: r.x, top: r.y }}
+                                      />
+                                    ))}
+                                </button>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => setQuantity(item.id, 1)}
-                                className="qty-btn qty-btn-inc"
-                                aria-label="Increase quantity"
-                              >
-                                +
-                              </button>
                             </div>
                           </div>
                         </article>
@@ -543,7 +660,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         {totalItems > 0 && (
           <div className="menu-counter">
             <div
-              className="mx-auto px-4 py-3 flex items-center justify-between"
+              className="mx-auto px-4 py-3 sm:py-3.5 flex items-center justify-between"
               style={{ maxWidth: '900px' }}
             >
               <div>
