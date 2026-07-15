@@ -159,11 +159,24 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
+  const [heroVisible, setHeroVisible] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const isRtl = locale === 'ar';
 
   useEffect(() => {
     saveQuantities(tenant.slug, quantities);
   }, [tenant.slug, quantities]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const clearOrder = useCallback(() => {
     setQuantities(new Map());
@@ -308,6 +321,22 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           flex-direction: column;
         }
 
+        .menu-card-image-wrap {
+          aspect-ratio: 4 / 3;
+          overflow: hidden;
+        }
+
+        .menu-card-image-wrap .placeholder-icon {
+          color: var(--accent);
+        }
+
+        .menu-card-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          padding: 12px 14px 14px;
+        }
+
         .menu-category {
           content-visibility: auto;
           contain-intrinsic-size: 400px;
@@ -335,15 +364,44 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           top: 0;
           right: 0;
           bottom: 0;
-          width: 40px;
-          background: linear-gradient(to left, var(--bg), transparent);
+          width: 60px;
+          background: linear-gradient(to left, var(--bg) 30%, transparent);
           pointer-events: none;
         }
 
         [dir='rtl'] .nav-scroll-hint::after {
           right: auto;
           left: 0;
-          background: linear-gradient(to right, var(--bg), transparent);
+          background: linear-gradient(to right, var(--bg) 30%, transparent);
+        }
+
+        .menu-compact-hero {
+          display: none;
+          border-bottom: 0.5px solid #E4DDCF;
+        }
+
+        .menu-compact-hero.visible {
+          display: block;
+        }
+
+        .menu-wordmark {
+          font-family: 'Alex Brush', cursive;
+          font-size: 22px;
+          line-height: 1;
+          color: var(--primary);
+        }
+
+        .menu-hero {
+          transition: opacity 200ms ease, height 250ms ease, padding 200ms ease;
+          overflow: hidden;
+        }
+
+        .menu-hero.hidden {
+          opacity: 0;
+          pointer-events: none;
+          height: 0;
+          padding-top: 0;
+          padding-bottom: 0;
         }
 
         .menu-category-pill {
@@ -561,6 +619,77 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           color: #fff;
         }
 
+        @media (max-width: 479px) {
+          .menu-card {
+            flex-direction: row;
+            padding: 10px;
+            gap: 10px;
+          }
+
+          .menu-card-image-wrap {
+            width: 72px;
+            height: 72px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            aspect-ratio: auto;
+          }
+
+          .menu-card-image-wrap .placeholder-icon {
+            font-size: 22px;
+          }
+
+          .menu-card-body {
+            padding: 0;
+            min-width: 0;
+          }
+
+          .menu-item-name {
+            font-size: 14px;
+          }
+
+          .menu-categories-container > * + * {
+            margin-top: 10px;
+          }
+
+          .menu-section-header {
+            font-size: 16px;
+          }
+
+          .menu-category > div:first-child {
+            margin-bottom: 2px;
+            padding-bottom: 0;
+          }
+
+          .menu-items-grid {
+            gap: 10px;
+          }
+
+          .variant-chips {
+            gap: 4px;
+          }
+
+          .variant-chip {
+            font-size: 10px;
+            padding: 3px 8px;
+          }
+
+          .stepper {
+            height: 26px;
+          }
+
+          .stepper-btn {
+            width: 26px;
+            height: 26px;
+          }
+
+          .stepper-btn.add {
+            width: auto;
+            font-size: 10px;
+            gap: 2px;
+            padding: 0 10px;
+          }
+        }
+
         @media (min-width: 480px) {
           .menu-item-name {
             font-size: 14px;
@@ -592,7 +721,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
       <main className="menu-page min-h-dvh" dir={isRtl ? 'rtl' : 'ltr'}>
         {/* Hero header */}
-        <header className="relative text-center px-4 pt-8 pb-6" style={{ background: 'var(--bg)' }}>
+        <header className={`menu-hero relative text-center px-4 pt-8 pb-6 ${heroVisible ? '' : 'hidden'}`} style={{ background: 'var(--bg)' }}>
           <div className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'}`}>
             <LanguageSwitcher locale={locale} slug={tenant.slug} />
           </div>
@@ -632,8 +761,14 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           )}
         </header>
 
-        {/* Category nav */}
+        {/* Category nav + compact hero */}
         <nav className="menu-category-nav nav-scroll-hint">
+          <div className={`menu-compact-hero ${heroVisible ? '' : 'visible'}`}>
+            <div className="flex items-center justify-between mx-auto px-4 py-2" style={{ maxWidth: '900px' }}>
+              <LanguageSwitcher locale={locale} slug={tenant.slug} />
+              <span className="menu-wordmark">Valley Star</span>
+            </div>
+          </div>
           <div className="mx-auto px-4 overflow-x-auto whitespace-nowrap" style={{ maxWidth: '900px' }}>
             <div className="flex py-1">
               <button
@@ -661,12 +796,15 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           </div>
         </nav>
 
+        {/* Sentinel for scroll detection */}
+        <div ref={sentinelRef} className="h-px" />
+
         {/* Categories */}
         <div
           className="mx-auto px-4 py-6 sm:py-8"
           style={{ maxWidth: '900px' }}
         >
-          <div className="space-y-12">
+          <div className="menu-categories-container space-y-12">
             {visibleCategories.map((category) => {
               const catTrans = t(category);
               const items = category.items
@@ -711,14 +849,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
                       return (
                         <article key={item.id} className="menu-card">
-                          {item.imageUrl ? (
-                            <div
-                              className="overflow-hidden"
-                              style={{
-                                aspectRatio: '4 / 3',
-                                borderRadius: `${tenant.borderRadiusLg} ${tenant.borderRadiusLg} 0 0`,
-                              }}
-                            >
+                          <div className="menu-card-image-wrap" style={{ background: '#EDE7DB' }}>
+                            {item.imageUrl ? (
                               <img
                                 src={item.imageUrl}
                                 alt={itemTrans.name}
@@ -727,21 +859,14 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                 height={300}
                                 className="w-full h-full object-cover"
                               />
-                            </div>
-                          ) : (
-                            <div
-                              className="flex items-center justify-center"
-                              style={{
-                                aspectRatio: '4 / 3',
-                                background: '#EDE7DB',
-                                borderRadius: `${tenant.borderRadiusLg} ${tenant.borderRadiusLg} 0 0`,
-                              }}
-                            >
-                              <Icon className="placeholder-icon" size={36} strokeWidth={1.2} />
-                            </div>
-                          )}
+                            ) : (
+                              <div className="flex items-center justify-center w-full h-full">
+                                <Icon className="placeholder-icon" size={36} strokeWidth={1.2} />
+                              </div>
+                            )}
+                          </div>
 
-                          <div className="flex flex-col" style={{ padding: '12px 14px 14px' }}>
+                          <div className="menu-card-body">
                             <div className="flex items-start justify-between gap-2">
                               <h3 className="menu-item-name truncate">{itemTrans.name}</h3>
                               <span className="menu-item-price whitespace-nowrap shrink-0">
