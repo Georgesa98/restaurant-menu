@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TenantData, WithTranslations } from '@/lib/types';
 import { LanguageSwitcher } from './language-switcher';
@@ -34,12 +34,11 @@ function t(item: WithTranslations<{ name: string; description: string | null }>)
 }
 
 function formatPrice(price: number, locale: string): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
-    style: 'currency',
-    currency: 'SYP',
+  const n = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
+  return locale === 'ar' ? `${n} ل.س` : `SYP ${n}`;
 }
 
 function categoryIcon(slug: string) {
@@ -159,24 +158,11 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
-  const [heroVisible, setHeroVisible] = useState(true);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const isRtl = locale === 'ar';
 
   useEffect(() => {
     saveQuantities(tenant.slug, quantities);
   }, [tenant.slug, quantities]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setHeroVisible(entry.isIntersecting),
-      { threshold: 0 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   const clearOrder = useCallback(() => {
     setQuantities(new Map());
@@ -343,9 +329,6 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         }
 
         .menu-category-nav {
-          position: sticky;
-          top: 0;
-          z-index: 20;
           background: var(--bg);
           border-bottom: 0.5px solid #E4DDCF;
         }
@@ -373,35 +356,6 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           right: auto;
           left: 0;
           background: linear-gradient(to right, var(--bg) 30%, transparent);
-        }
-
-        .menu-compact-hero {
-          display: none;
-          border-bottom: 0.5px solid #E4DDCF;
-        }
-
-        .menu-compact-hero.visible {
-          display: block;
-        }
-
-        .menu-wordmark {
-          font-family: 'Alex Brush', cursive;
-          font-size: 22px;
-          line-height: 1;
-          color: var(--primary);
-        }
-
-        .menu-hero {
-          transition: opacity 200ms ease, height 250ms ease, padding 200ms ease;
-          overflow: hidden;
-        }
-
-        .menu-hero.hidden {
-          opacity: 0;
-          pointer-events: none;
-          height: 0;
-          padding-top: 0;
-          padding-bottom: 0;
         }
 
         .menu-category-pill {
@@ -644,7 +598,15 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           }
 
           .menu-item-name {
-            font-size: 14px;
+            font-size: 16px;
+          }
+
+          .menu-item-price {
+            font-size: 15px;
+          }
+
+          .menu-item-description {
+            font-size: 13px;
           }
 
           .menu-categories-container > * + * {
@@ -652,12 +614,16 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           }
 
           .menu-section-header {
-            font-size: 16px;
+            font-size: 18px;
           }
 
           .menu-category > div:first-child {
             margin-bottom: 2px;
             padding-bottom: 0;
+          }
+
+          .menu-category-pill {
+            font-size: 12px;
           }
 
           .menu-items-grid {
@@ -669,24 +635,28 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           }
 
           .variant-chip {
-            font-size: 10px;
+            font-size: 11px;
             padding: 3px 8px;
           }
 
           .stepper {
-            height: 26px;
+            height: 28px;
           }
 
           .stepper-btn {
-            width: 26px;
-            height: 26px;
+            width: 28px;
+            height: 28px;
           }
 
           .stepper-btn.add {
             width: auto;
-            font-size: 10px;
+            font-size: 12px;
             gap: 2px;
-            padding: 0 10px;
+            padding: 0 12px;
+          }
+
+          .stepper-count {
+            font-size: 14px;
           }
         }
 
@@ -721,7 +691,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
       <main className="menu-page min-h-dvh" dir={isRtl ? 'rtl' : 'ltr'}>
         {/* Hero header */}
-        <header className={`menu-hero relative text-center px-4 pt-8 pb-6 ${heroVisible ? '' : 'hidden'}`} style={{ background: 'var(--bg)' }}>
+        <header className="relative text-center px-4 pt-8 pb-6" style={{ background: 'var(--bg)' }}>
           <div className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'}`}>
             <LanguageSwitcher locale={locale} slug={tenant.slug} />
           </div>
@@ -761,14 +731,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           )}
         </header>
 
-        {/* Category nav + compact hero */}
+        {/* Category nav */}
         <nav className="menu-category-nav nav-scroll-hint">
-          <div className={`menu-compact-hero ${heroVisible ? '' : 'visible'}`}>
-            <div className="flex items-center justify-between mx-auto px-4 py-2" style={{ maxWidth: '900px' }}>
-              <LanguageSwitcher locale={locale} slug={tenant.slug} />
-              <span className="menu-wordmark">Valley Star</span>
-            </div>
-          </div>
           <div className="mx-auto px-4 overflow-x-auto whitespace-nowrap" style={{ maxWidth: '900px' }}>
             <div className="flex py-1">
               <button
@@ -795,9 +759,6 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
             </div>
           </div>
         </nav>
-
-        {/* Sentinel for scroll detection */}
-        <div ref={sentinelRef} className="h-px" />
 
         {/* Categories */}
         <div

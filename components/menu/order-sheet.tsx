@@ -7,12 +7,11 @@ import type { TenantData } from '@/lib/types';
 import type { OrderedEntry } from './order-menu';
 
 function formatPrice(price: number, locale: string): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
-    style: 'currency',
-    currency: 'SYP',
+  const n = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(price);
+  return locale === 'ar' ? `${n} ل.س` : `SYP ${n}`;
 }
 
 export function OrderSheet({
