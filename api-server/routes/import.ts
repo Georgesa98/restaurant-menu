@@ -83,22 +83,58 @@ importData.post('/', async (c) => {
           where: { tenantId: effectiveTenantId, categoryId: category.id, name: itemName },
         });
 
-        const data = {
-          name: itemName,
-          description: item.description ?? null,
-          price: item.consumerPrice ?? item.price ?? 0,
-          financialPrice: item.financialPrice ?? item.consumerPrice ?? item.price ?? 0,
-          displayOrder: item.order ?? 0,
-          isAvailable: item.isAvailable ?? true,
-          dietaryTags: item.dietaryTags ?? [],
-          categoryId: category.id,
-        };
+        const hasVariants = item.variants?.length > 0;
 
         if (menuItem) {
-          await prisma.menuItem.update({ where: { id: menuItem.id }, data });
+          await prisma.menuItemVariant.deleteMany({ where: { menuItemId: menuItem.id } });
+          await prisma.menuItem.update({
+            where: { id: menuItem.id },
+            data: {
+              name: itemName,
+              description: item.description ?? null,
+              basePrice: hasVariants ? null : (item.basePrice ?? item.consumerPrice ?? 0),
+              imageUrl: item.imageUrl ?? null,
+              displayOrder: item.order ?? 0,
+              isAvailable: item.isAvailable ?? true,
+              dietaryTags: item.dietaryTags ?? [],
+              categoryId: category.id,
+              ...(hasVariants
+                ? {
+                    variants: {
+                      create: item.variants.map((v: any, i: number) => ({
+                        label: v.label,
+                        price: v.price,
+                        sortOrder: i,
+                      })),
+                    },
+                  }
+                : {}),
+            },
+          });
         } else {
           menuItem = await prisma.menuItem.create({
-            data: { ...data, tenantId: effectiveTenantId },
+            data: {
+              tenantId: effectiveTenantId,
+              categoryId: category.id,
+              name: itemName,
+              description: item.description ?? null,
+              basePrice: hasVariants ? null : (item.basePrice ?? item.consumerPrice ?? 0),
+              imageUrl: item.imageUrl ?? null,
+              displayOrder: item.order ?? 0,
+              isAvailable: item.isAvailable ?? true,
+              dietaryTags: item.dietaryTags ?? [],
+              ...(hasVariants
+                ? {
+                    variants: {
+                      create: item.variants.map((v: any, i: number) => ({
+                        label: v.label,
+                        price: v.price,
+                        sortOrder: i,
+                      })),
+                    },
+                  }
+                : {}),
+            },
           });
         }
         itemCount++;

@@ -5,7 +5,12 @@ function menuInclude(locale: string) {
   return {
     categories: {
       include: {
-        items: { include: { translations: { where: { locale } } } },
+          items: {
+            include: {
+              translations: { where: { locale } },
+              variants: { orderBy: { sortOrder: 'asc' } },
+            },
+          },
         translations: { where: { locale } },
       },
     },
@@ -47,7 +52,12 @@ export async function getTenantWithCategory(
       categories: {
         where: { slug: categorySlug, isActive: true },
         include: {
-          items: { include: { translations: { where: { locale } } } },
+        items: {
+          include: {
+            translations: { where: { locale } },
+            variants: { orderBy: { sortOrder: 'asc' } },
+          },
+        },
           translations: { where: { locale } },
         },
       },

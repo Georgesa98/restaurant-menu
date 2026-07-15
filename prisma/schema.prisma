@@ -169,28 +169,39 @@ model Category {
 }
 
 model MenuItem {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @db.Uuid
-  categoryId   String   @db.Uuid
-  name         String
-  description  String?
-  price           Decimal  @db.Decimal(10, 2)
-  financialPrice  Decimal  @default(0) @db.Decimal(10, 2)
-  imageThumbnail String?  // 150×150 WebP
-  imageCard      String?  // 600×400 WebP
-  imageFull      String?  // 1200×800 WebP
-  isAvailable  Boolean  @default(true)
-  displayOrder Int      @default(0)
-  dietaryTags  String[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  categoryId  String   @db.Uuid
+  name        String
+  description String?
+  basePrice   Decimal? @db.Decimal(10, 2)         // price when no variants exist
+  imageUrl    String?                             // single photo for the whole card
+  isAvailable Boolean  @default(true)
+  displayOrder Int     @default(0)
+  dietaryTags String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   tenant       Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category     Category             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   translations MenuItemTranslation[]
+  variants     MenuItemVariant[]
 
   @@index([tenantId, categoryId])
   @@map("menu_items")
+}
+
+model MenuItemVariant {
+  id         String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @db.Uuid
+  label      String
+  price      Decimal  @db.Decimal(10, 2)
+  sortOrder  Int      @default(0)
+
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId])
+  @@map("menu_item_variants")
 }
 
 model CategoryTranslation {

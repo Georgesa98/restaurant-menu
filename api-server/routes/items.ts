@@ -22,7 +22,7 @@ items.get('/', async (c) => {
       ...(categoryId ? { categoryId } : {}),
     },
     orderBy: { displayOrder: 'asc' },
-    include: { translations: true, category: true },
+    include: { translations: true, category: true, variants: { orderBy: { sortOrder: 'asc' } } },
   });
 
   return c.json(menuItems);
@@ -32,7 +32,7 @@ items.get('/:id', async (c) => {
   const id = c.req.param('id');
   const menuItem = await prisma.menuItem.findUnique({
     where: { id },
-    include: { translations: true, category: true },
+    include: { translations: true, category: true, variants: { orderBy: { sortOrder: 'asc' } } },
   });
   if (!menuItem) return c.json({ error: 'Not found' }, 404);
   return c.json(menuItem);
@@ -52,14 +52,22 @@ items.post('/', async (c) => {
       categoryId: body.categoryId,
       name: body.name,
       description: body.description ?? null,
-      price: body.price,
-      financialPrice: body.financialPrice ?? body.price,
-      imageThumbnail: body.imageThumbnail ?? null,
-      imageCard: body.imageCard ?? null,
-      imageFull: body.imageFull ?? null,
+      basePrice: body.basePrice ?? null,
+      imageUrl: body.imageUrl ?? null,
       isAvailable: body.isAvailable ?? true,
       displayOrder: body.displayOrder ?? 0,
       dietaryTags: body.dietaryTags ?? [],
+      ...(body.variants?.length
+        ? {
+            variants: {
+              create: body.variants.map((v: any, i: number) => ({
+                label: v.label,
+                price: v.price,
+                sortOrder: i,
+              })),
+            },
+          }
+        : {}),
     },
   });
 
@@ -70,20 +78,31 @@ items.put('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
 
+  // replace variants atomically
+  await prisma.menuItemVariant.deleteMany({ where: { menuItemId: id } });
+
   const menuItem = await prisma.menuItem.update({
     where: { id },
     data: {
       categoryId: body.categoryId,
       name: body.name,
       description: body.description,
-      price: body.price,
-      financialPrice: body.financialPrice,
-      imageThumbnail: body.imageThumbnail,
-      imageCard: body.imageCard,
-      imageFull: body.imageFull,
+      basePrice: body.basePrice,
+      imageUrl: body.imageUrl,
       isAvailable: body.isAvailable,
       displayOrder: body.displayOrder,
       dietaryTags: body.dietaryTags,
+      ...(body.variants?.length
+        ? {
+            variants: {
+              create: body.variants.map((v: any, i: number) => ({
+                label: v.label,
+                price: v.price,
+                sortOrder: i,
+              })),
+            },
+          }
+        : {}),
     },
   });
 

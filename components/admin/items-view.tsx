@@ -14,21 +14,25 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+type VariantRow = {
+  id?: string;
+  label: string;
+  price: number;
+};
+
 type Item = {
   id: string;
   categoryId: string;
   name: string;
   description: string | null;
-  price: number;
-  financialPrice: number;
-  imageThumbnail: string | null;
-  imageCard: string | null;
-  imageFull: string | null;
+  basePrice: number | null;
+  imageUrl: string | null;
   isAvailable: boolean;
   displayOrder: number;
   dietaryTags: string[];
   category?: { name: string };
   translations: { locale: string; name: string; description: string | null }[];
+  variants: VariantRow[];
 };
 
 type Category = { id: string; name: string };
@@ -55,6 +59,12 @@ function SortableCard({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const priceLabel = item.variants.length
+    ? `SYP ${Math.min(...item.variants.map((v) => v.price)).toLocaleString('en-US')}+`
+    : item.basePrice
+      ? `SYP ${item.basePrice.toLocaleString('en-US')}`
+      : null;
 
   return (
     <div
@@ -85,7 +95,7 @@ function SortableCard({
       <p className="text-sm font-medium truncate mb-1">{item.name}</p>
       {item.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold tabular-nums">SYP {Number(item.price).toLocaleString('en-US')}</span>
+        <span className="text-sm font-semibold tabular-nums">{priceLabel}</span>
         <div className="flex gap-1">
           <Button variant="ghost" size="xs" onClick={() => onEdit(item)}>
             <Pencil className="size-3.5" />
@@ -110,6 +120,8 @@ export function ItemsView() {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [uploading, setUploading] = useState(false);
+
+  const [variants, setVariants] = useState<VariantRow[]>([]);
 
   const tenantId = user?.role === 'SUPER_ADMIN' ? '' : user?.tenantId;
 
@@ -172,17 +184,15 @@ export function ItemsView() {
       categoryId,
       name: data.get('name') as string,
       description: (data.get('description') as string) || null,
-      price: parseFloat(data.get('price') as string),
-      financialPrice: parseFloat(data.get('financialPrice') as string) || 0,
-      imageThumbnail: (data.get('imageThumbnail') as string) || null,
-      imageCard: (data.get('imageCard') as string) || null,
-      imageFull: (data.get('imageFull') as string) || null,
+      basePrice: variants.length ? null : (parseFloat(data.get('basePrice') as string) || null),
+      imageUrl: (data.get('imageUrl') as string) || null,
       isAvailable: data.get('isAvailable') === 'on',
       displayOrder: Number(data.get('displayOrder')),
       dietaryTags: (data.get('dietaryTags') as string)
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
+      variants: variants.filter((v) => v.label.trim()),
     };
 
     let saved: Item;
@@ -221,7 +231,7 @@ export function ItemsView() {
     load();
   }
 
-  const [previews, setPreviews] = useState<{ thumbnail: string; card: string; full: string } | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   async function uploadFile(file: File) {
     setUploading(true);
@@ -231,36 +241,47 @@ export function ItemsView() {
       const res = await api.post('/api/upload', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setPreviews(res.data);
+      setPreview(res.data.url);
     } finally {
       setUploading(false);
     }
   }
 
   function openEdit(item?: Item) {
-    const defaults = item ?? {
+    const defaults: Partial<Item> = item ?? {
       id: '',
       categoryId: '',
       name: '',
       description: '',
-      price: 0,
-      financialPrice: 0,
-      imageThumbnail: null,
-      imageCard: null,
-      imageFull: null,
+      basePrice: null,
+      imageUrl: null,
       isAvailable: true,
       displayOrder: 0,
       dietaryTags: [],
       translations: [],
+      variants: [],
     };
-    setPreviews(
-      item?.imageCard
-        ? { thumbnail: item.imageThumbnail ?? '', card: item.imageCard, full: item.imageFull ?? '' }
-        : null,
-    );
+    setPreview(item?.imageUrl ?? null);
+    setVariants(item?.variants ?? []);
     setEditing(defaults);
     setCategoryId(defaults.categoryId ?? '');
     setOpen(true);
+  }
+
+  function addVariant() {
+    setVariants((prev) => [...prev, { label: '', price: 0 }]);
+  }
+
+  function updateVariant(index: number, field: keyof VariantRow, value: string | number) {
+    setVariants((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  }
+
+  function removeVariant(index: number) {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
   }
 
   return (
@@ -334,7 +355,8 @@ export function ItemsView() {
         onOpenChange={(v) => {
           setOpen(v);
           if (!v) {
-            setPreviews(null);
+            setPreview(null);
+            setVariants([]);
             setEditing(null);
           }
         }}
@@ -347,7 +369,7 @@ export function ItemsView() {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>{t('categories')}</Label>
                   <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? '')}>
@@ -364,14 +386,11 @@ export function ItemsView() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Consumer price (SYP)</Label>
-                  <Input name="price" type="number" step="0.01" defaultValue={editing?.price} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Financial price (SYP)</Label>
-                  <Input name="financialPrice" type="number" step="0.01" defaultValue={editing?.financialPrice} />
+                  <Label>{t('displayOrder')}</Label>
+                  <Input name="displayOrder" type="number" defaultValue={editing?.displayOrder} />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label>{t('name')}</Label>
                 <Input name="name" defaultValue={editing?.name} required />
@@ -380,56 +399,96 @@ export function ItemsView() {
                 <Label>{t('description')}</Label>
                 <Input name="description" defaultValue={editing?.description ?? ''} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              {/* Price / Variants */}
+              {variants.length === 0 ? (
                 <div className="space-y-2">
-                  <Label>{t('displayOrder')}</Label>
-                  <Input name="displayOrder" type="number" defaultValue={editing?.displayOrder} />
+                  <Label>Base price (SYP)</Label>
+                  <Input name="basePrice" type="number" step="any" defaultValue={editing?.basePrice ?? ''} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Image</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={uploading}
-                      onClick={() => document.getElementById('image-upload')?.click()}
-                    >
-                      <Upload className="size-3.5" />
-                      {uploading ? 'Uploading…' : 'Upload'}
-                    </Button>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) await uploadFile(file);
-                      }}
+              ) : (
+                <input type="hidden" name="basePrice" value="" />
+              )}
+
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium text-muted-foreground tracking-wide">VARIANTS</Label>
+                  <Button type="button" variant="outline" size="xs" onClick={addVariant}>
+                    <Plus className="size-3" /> Add variant
+                  </Button>
+                </div>
+                {variants.map((v, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input
+                      placeholder="Label (e.g. Large)"
+                      value={v.label}
+                      onChange={(e) => updateVariant(i, 'label', e.target.value)}
+                      className="flex-1"
                     />
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="Price"
+                      value={v.price || ''}
+                      onChange={(e) => updateVariant(i, 'price', parseFloat(e.target.value) || 0)}
+                      className="w-28"
+                    />
+                    <Button type="button" variant="ghost" size="xs" onClick={() => removeVariant(i)}>
+                      <Trash2 className="size-3.5 text-destructive" />
+                    </Button>
                   </div>
-                  <input type="hidden" name="imageThumbnail" value={previews?.thumbnail ?? ''} />
-                  <input type="hidden" name="imageCard" value={previews?.card ?? ''} />
-                  <input type="hidden" name="imageFull" value={previews?.full ?? ''} />
-                  {previews?.card && (
-                    <div className="relative mt-2 inline-block">
-                      <img
-                        src={previews.card}
-                        alt="Preview"
-                        className="w-24 h-16 rounded-lg object-cover ring-1 ring-foreground/10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setPreviews(null)}
-                        className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-background ring-1 ring-foreground/10 flex items-center justify-center hover:bg-muted"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                ))}
+                {variants.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Add variants (e.g. Cup / Pot) or leave empty to use a single base price.
+                  </p>
+                )}
               </div>
+
+              {/* Image */}
+              <div className="space-y-2">
+                <Label>Image</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                  >
+                    <Upload className="size-3.5" />
+                    {uploading ? 'Uploading…' : 'Upload'}
+                  </Button>
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) await uploadFile(file);
+                    }}
+                  />
+                </div>
+                <input type="hidden" name="imageUrl" value={preview ?? ''} />
+                {preview && (
+                  <div className="relative mt-2 inline-block">
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="w-32 h-24 rounded-lg object-cover ring-1 ring-foreground/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreview(null)}
+                      className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-background ring-1 ring-foreground/10 flex items-center justify-center hover:bg-muted"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label>{t('dietaryTags')}</Label>
                 <Input

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "prisma migrate deploy && prisma generate && prisma db seed && next build",
+    "build": "prisma db push --accept-data-loss && prisma generate && prisma db seed && next build",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -16,7 +16,7 @@
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
     "api:dev": "tsx watch api-server/index.ts",
-    "api:start": "prisma migrate deploy && tsx api-server/index.ts",
+    "api:start": "prisma db push --accept-data-loss && tsx api-server/index.ts",
     "api:seed": "tsx api-server/seed-admin.ts"
   },
   "prisma": {

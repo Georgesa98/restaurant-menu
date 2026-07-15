@@ -77,28 +77,21 @@ function categoryIcon(slug: string) {
   }
 }
 
-function retinaSrc(cardSrc: string | null): string | null {
-  if (!cardSrc) return null;
-  return cardSrc.replace('_card.webp', '_card@2x.webp');
-}
-
 type Ripple = { id: number; itemId: string; x: number; y: number };
 
 function getStorageKey(slug: string) {
   return `menu-order:${slug}`;
 }
 
-function loadQuantities(slug: string, validIds: Set<string>): Map<string, number> {
+function loadQuantities(slug: string): Map<string, number> {
   if (typeof window === 'undefined') return new Map();
   try {
     const raw = localStorage.getItem(getStorageKey(slug));
     if (!raw) return new Map();
     const parsed = JSON.parse(raw) as Record<string, number>;
     const map = new Map<string, number>();
-    for (const [id, qty] of Object.entries(parsed)) {
-      if (validIds.has(id) && typeof qty === 'number' && qty > 0) {
-        map.set(id, qty);
-      }
+    for (const [key, qty] of Object.entries(parsed)) {
+      if (typeof qty === 'number' && qty > 0) map.set(key, qty);
     }
     return map;
   } catch {
@@ -110,8 +103,8 @@ function saveQuantities(slug: string, quantities: Map<string, number>) {
   if (typeof window === 'undefined') return;
   try {
     const record: Record<string, number> = {};
-    for (const [id, qty] of quantities) {
-      if (qty > 0) record[id] = qty;
+    for (const [key, qty] of quantities) {
+      if (qty > 0) record[key] = qty;
     }
     localStorage.setItem(getStorageKey(slug), JSON.stringify(record));
   } catch {
@@ -119,17 +112,50 @@ function saveQuantities(slug: string, quantities: Map<string, number>) {
   }
 }
 
+function getPrice(item: WithTranslations<{
+  id: string;
+  name: string;
+  description: string | null;
+  basePrice: { toString: () => string } | null;
+  imageUrl: string | null;
+  isAvailable: boolean;
+  displayOrder: number;
+  dietaryTags: string[];
+  variants: { id: string; label: string; price: { toString: () => string }; sortOrder: number }[];
+}>): number {
+  if (item.variants.length > 0) {
+    return Math.min(...item.variants.map((v) => Number(v.price)));
+  }
+  return item.basePrice ? Number(item.basePrice) : 0;
+}
+
+export type OrderedEntry = {
+  key: string;
+  itemId: string;
+  variantId?: string;
+  label: string;
+  price: number;
+  categoryName: string;
+};
+
 export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: string }) {
   const tm = useTranslations('menu');
 
-  const allItemIds = useMemo(
-    () => new Set(tenant.categories.flatMap((c) => c.items.map((i) => i.id))),
-    [tenant.categories]
+  const [quantities, setQuantities] = useState<Map<string, number>>(() =>
+    loadQuantities(tenant.slug)
   );
 
-  const [quantities, setQuantities] = useState<Map<string, number>>(() =>
-    loadQuantities(tenant.slug, allItemIds)
-  );
+  const [selectedVariants, setSelectedVariants] = useState<Map<string, string>>(() => {
+    const map = new Map<string, string>();
+    for (const cat of tenant.categories) {
+      for (const item of cat.items) {
+        if (item.variants.length > 0 && item.isAvailable) {
+          map.set(item.id, item.variants[0].id);
+        }
+      }
+    }
+    return map;
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
@@ -160,36 +186,36 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
   const totalPrice = useMemo(() => {
     let total = 0;
-    for (const [id, q] of quantities) {
-      const item = tenant.categories.flatMap((c) => c.items).find((i) => i.id === id);
-      if (item) total += Number(item.price) * q;
+    for (const [key, q] of quantities) {
+      const [itemId, variantId] = key.split(':');
+      for (const cat of tenant.categories) {
+        const item = cat.items.find((i) => i.id === itemId);
+        if (item) {
+          if (variantId) {
+            const v = item.variants.find((v) => v.id === variantId);
+            if (v) total += Number(v.price) * q;
+          } else {
+            total += (item.basePrice ? Number(item.basePrice) : 0) * q;
+          }
+          break;
+        }
+      }
     }
     return total;
   }, [quantities, tenant.categories]);
-
-  const allItems = useMemo(
-    () =>
-      categories.flatMap((category) => {
-        const catTrans = t(category);
-        return category.items
-          .filter((i) => i.isAvailable)
-          .map((item) => ({ ...item, categoryName: catTrans.name }));
-      }),
-    [categories]
-  );
 
   const visibleCategories = useMemo(
     () => (selectedCategory === 'all' ? categories : categories.filter((c) => c.slug === selectedCategory)),
     [categories, selectedCategory]
   );
 
-  const setQuantity = useCallback((id: string, delta: number) => {
+  const setQuantity = useCallback((key: string, delta: number) => {
     setQuantities((prev) => {
       const next = new Map(prev);
-      const current = next.get(id) ?? 0;
+      const current = next.get(key) ?? 0;
       const updated = current + delta;
-      if (updated <= 0) next.delete(id);
-      else next.set(id, updated);
+      if (updated <= 0) next.delete(key);
+      else next.set(key, updated);
       return next;
     });
   }, []);
@@ -206,8 +232,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     }, 500);
   }
 
-  function handleIncrement(event: React.MouseEvent<HTMLButtonElement>, itemId: string) {
-    setQuantity(itemId, 1);
+  function handleIncrement(event: React.MouseEvent<HTMLButtonElement>, key: string, itemId: string) {
+    setQuantity(key, 1);
     addRipple(event, itemId);
   }
 
@@ -215,6 +241,35 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     setSelectedCategory(slug);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  const orderedEntries = useMemo(() => {
+    const result: OrderedEntry[] = [];
+    for (const [key, q] of quantities) {
+      if (q <= 0) continue;
+      const [itemId, variantId] = key.split(':');
+      for (const cat of categories) {
+        const item = cat.items.find((i) => i.id === itemId);
+        if (item) {
+          const catTrans = t(cat);
+          const itemTrans = t(item);
+          let price = 0;
+          let label = itemTrans.name;
+          if (variantId) {
+            const v = item.variants.find((v) => v.id === variantId);
+            if (v) {
+              price = Number(v.price);
+              label = `${itemTrans.name} — ${v.label}`;
+            }
+          } else {
+            price = item.basePrice ? Number(item.basePrice) : 0;
+          }
+          result.push({ key, itemId, variantId, label, price, categoryName: catTrans.name });
+          break;
+        }
+      }
+    }
+    return result;
+  }, [quantities, categories]);
 
   return (
     <>
@@ -465,6 +520,46 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           color: var(--accent);
         }
 
+        .variant-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .variant-chip {
+          font-family: var(--font-body);
+          font-size: 11px;
+          font-weight: 500;
+          padding: 4px 10px;
+          border-radius: 999px;
+          border: 0.5px solid #C9C0B2;
+          background: transparent;
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: all 120ms ease;
+        }
+
+        .variant-chip:focus-visible {
+          outline: 2px solid var(--primary);
+          outline-offset: 1px;
+        }
+
+        .variant-chip.selected {
+          background: var(--accent);
+          border-color: var(--accent);
+          color: #fff;
+        }
+
+        .variant-chip.has-qty {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
+        .variant-chip.selected.has-qty {
+          background: var(--accent);
+          color: #fff;
+        }
+
         @media (min-width: 480px) {
           .menu-item-name {
             font-size: 14px;
@@ -594,13 +689,28 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                   >
                     {items.map((item) => {
                       const itemTrans = t(item);
-                      const qty = quantities.get(item.id) ?? 0;
-                      const cardSrc = item.imageCard;
-                      const retinaSrcUrl = retinaSrc(cardSrc);
+                      const hasVariants = item.variants.length > 0;
+                      const selectedVariantId = selectedVariants.get(item.id);
+                      const selectedVariant = hasVariants
+                        ? item.variants.find((v) => v.id === selectedVariantId) ?? item.variants[0]
+                        : null;
+
+                      const qtyKey = hasVariants && selectedVariant
+                        ? `${item.id}:${selectedVariant.id}`
+                        : item.id;
+                      const qty = quantities.get(qtyKey) ?? 0;
+
+                      const displayPrice = selectedVariant
+                        ? Number(selectedVariant.price)
+                        : (item.basePrice ? Number(item.basePrice) : 0);
+
+                      const fromPrice = hasVariants
+                        ? Math.min(...item.variants.map((v) => Number(v.price)))
+                        : displayPrice;
 
                       return (
                         <article key={item.id} className="menu-card">
-                          {cardSrc ? (
+                          {item.imageUrl ? (
                             <div
                               className="overflow-hidden"
                               style={{
@@ -609,12 +719,11 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                               }}
                             >
                               <img
-                                src={cardSrc}
+                                src={item.imageUrl}
                                 alt={itemTrans.name}
                                 loading="lazy"
                                 width={400}
                                 height={300}
-                                srcSet={retinaSrcUrl ? `${cardSrc} 1x, ${retinaSrcUrl} 2x` : undefined}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -635,12 +744,41 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                             <div className="flex items-start justify-between gap-2">
                               <h3 className="menu-item-name truncate">{itemTrans.name}</h3>
                               <span className="menu-item-price whitespace-nowrap shrink-0">
-                                {formatPrice(Number(item.price), locale)}
+                                {hasVariants
+                                  ? `from ${formatPrice(fromPrice, locale)}`
+                                  : formatPrice(displayPrice, locale)}
                               </span>
                             </div>
 
                             {itemTrans.description && (
                               <p className="menu-item-description mt-1">{itemTrans.description}</p>
+                            )}
+
+                            {/* Variant chips */}
+                            {hasVariants && (
+                              <div className="variant-chips mt-2">
+                                {item.variants.map((v) => {
+                                  const isSelected = (selectedVariants.get(item.id) ?? item.variants[0].id) === v.id;
+                                  const vKey = `${item.id}:${v.id}`;
+                                  const hasQty = (quantities.get(vKey) ?? 0) > 0;
+                                  return (
+                                    <button
+                                      key={v.id}
+                                      type="button"
+                                      className={`variant-chip ${isSelected ? 'selected' : ''} ${hasQty ? 'has-qty' : ''}`}
+                                      onClick={() => {
+                                        setSelectedVariants((prev) => {
+                                          const next = new Map(prev);
+                                          next.set(item.id, v.id);
+                                          return next;
+                                        });
+                                      }}
+                                    >
+                                      {v.label} · {formatPrice(Number(v.price), locale)}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             )}
 
                             {item.dietaryTags.length > 0 && (
@@ -665,7 +803,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                 <div className="stepper">
                                   <button
                                     type="button"
-                                    onClick={() => setQuantity(item.id, -1)}
+                                    onClick={() => setQuantity(qtyKey, -1)}
                                     className="stepper-btn"
                                     aria-label="Decrease quantity"
                                   >
@@ -674,7 +812,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                   <span className="stepper-count">{qty}</span>
                                   <button
                                     type="button"
-                                    onClick={(e) => handleIncrement(e, item.id)}
+                                    onClick={(e) => handleIncrement(e, qtyKey, item.id)}
                                     className="stepper-btn"
                                     aria-label="Increase quantity"
                                   >
@@ -693,7 +831,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={(e) => handleIncrement(e, item.id)}
+                                  onClick={(e) => handleIncrement(e, qtyKey, item.id)}
                                   className="stepper-btn add"
                                   aria-label="Add item"
                                 >
@@ -763,7 +901,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
           onClearOrder={clearOrder}
-          items={allItems}
+          entries={orderedEntries}
           quantities={quantities}
           onUpdateQuantity={setQuantity}
           locale={locale}

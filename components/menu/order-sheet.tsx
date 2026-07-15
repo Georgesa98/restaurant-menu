@@ -3,19 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Minus, Plus, X } from 'lucide-react';
-import type { TenantData, WithTranslations } from '@/lib/types';
-
-type SheetItem = WithTranslations<{
-  id: string;
-  name: string;
-  description: string | null;
-  price: { toString: () => string };
-  imageCard: string | null;
-  isAvailable: boolean;
-  displayOrder: number;
-}> & {
-  categoryName: string;
-};
+import type { TenantData } from '@/lib/types';
+import type { OrderedEntry } from './order-menu';
 
 function formatPrice(price: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
@@ -26,17 +15,11 @@ function formatPrice(price: number, locale: string): string {
   }).format(price);
 }
 
-function tName(
-  item: WithTranslations<{ name: string; description: string | null }>,
-): string {
-  return item.translations?.[0]?.name ?? item.name;
-}
-
 export function OrderSheet({
   isOpen,
   onClose,
   onClearOrder,
-  items,
+  entries,
   quantities,
   onUpdateQuantity,
   locale,
@@ -46,9 +29,9 @@ export function OrderSheet({
   isOpen: boolean;
   onClose: () => void;
   onClearOrder: () => void;
-  items: SheetItem[];
+  entries: OrderedEntry[];
   quantities: Map<string, number>;
-  onUpdateQuantity: (id: string, delta: number) => void;
+  onUpdateQuantity: (key: string, delta: number) => void;
   locale: string;
   t: ReturnType<typeof useTranslations>;
   tenant: TenantData;
@@ -66,7 +49,6 @@ export function OrderSheet({
     document.addEventListener('keydown', onKeyDown);
     document.body.style.overflow = 'hidden';
 
-    // Focus the close button when opening
     closeRef.current?.focus();
 
     return () => {
@@ -75,12 +57,12 @@ export function OrderSheet({
     };
   }, [isOpen, onClose]);
 
-  const ordered = items
-    .map((item) => ({ item, qty: quantities.get(item.id) ?? 0 }))
+  const ordered = entries
+    .map((entry) => ({ entry, qty: quantities.get(entry.key) ?? 0 }))
     .filter(({ qty }) => qty > 0)
-    .sort((a, b) => a.item.categoryName.localeCompare(b.item.categoryName));
+    .sort((a, b) => a.entry.categoryName.localeCompare(b.entry.categoryName));
 
-  const total = ordered.reduce((sum, { item, qty }) => sum + Number(item.price) * qty, 0);
+  const total = ordered.reduce((sum, { entry, qty }) => sum + entry.price * qty, 0);
   const totalItems = ordered.reduce((sum, { qty }) => sum + qty, 0);
 
   return (
@@ -131,22 +113,22 @@ export function OrderSheet({
             </div>
           ) : (
             <ul className="order-sheet-list">
-              {ordered.map(({ item, qty }) => (
-                <li key={item.id} className="order-sheet-row">
+              {ordered.map(({ entry, qty }) => (
+                <li key={entry.key} className="order-sheet-row">
                   <div className="order-sheet-row-main">
                     <div className="order-sheet-info">
-                      <p className="order-sheet-item-name">{tName(item)}</p>
-                      <p className="order-sheet-item-category">{item.categoryName}</p>
+                      <p className="order-sheet-item-name">{entry.label}</p>
+                      <p className="order-sheet-item-category">{entry.categoryName}</p>
                     </div>
                     <p className="order-sheet-line-total">
-                      {formatPrice(Number(item.price) * qty, locale)}
+                      {formatPrice(entry.price * qty, locale)}
                     </p>
                   </div>
 
                   <div className="order-sheet-stepper">
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(item.id, -1)}
+                      onClick={() => onUpdateQuantity(entry.key, -1)}
                       className="order-sheet-stepper-btn"
                       aria-label="Decrease quantity"
                     >
@@ -155,7 +137,7 @@ export function OrderSheet({
                     <span className="order-sheet-stepper-count">{qty}</span>
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(item.id, 1)}
+                      onClick={() => onUpdateQuantity(entry.key, 1)}
                       className="order-sheet-stepper-btn"
                       aria-label="Increase quantity"
                     >

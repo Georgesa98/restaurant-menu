@@ -31,7 +31,8 @@ export async function uploadToBucket(
 ) {
   if (!bucket) throw new Error('STORAGE_BUCKET not configured');
 
-  const results = await Promise.all(
+  const results: Record<string, string> = {};
+  await Promise.all(
     variants.map((v) => {
       const storageKey = `uploads/${tenantId}/${v.key}`;
       return s3()
@@ -43,12 +44,14 @@ export async function uploadToBucket(
             ContentType: v.contentType,
           }),
         )
-        .then(() => storageKey);
+        .then(() => {
+          const name = v.key.replace(/\.\w+$/, '');
+          results[name] = storageKey;
+        });
     }),
   );
 
-  const [thumbnail, card, full] = results;
-  return { thumbnail, card, full };
+  return results;
 }
 
 export async function streamFromBucket(key: string) {

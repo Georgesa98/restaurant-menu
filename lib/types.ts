@@ -39,13 +39,17 @@ export type TenantData = {
       id: string;
       name: string;
       description: string | null;
-      price: { toString: () => string };
-      imageThumbnail: string | null;
-      imageCard: string | null;
-      imageFull: string | null;
+      basePrice: { toString: () => string } | null;
+      imageUrl: string | null;
       isAvailable: boolean;
       displayOrder: number;
       dietaryTags: string[];
+      variants: {
+        id: string;
+        label: string;
+        price: { toString: () => string };
+        sortOrder: number;
+      }[];
     }>[];
   }>[];
 };

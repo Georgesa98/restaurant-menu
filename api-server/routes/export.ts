@@ -22,7 +22,7 @@ exportData.get('/', async (c) => {
       translations: true,
       items: {
         orderBy: { displayOrder: 'asc' },
-        include: { translations: true },
+        include: { translations: true, variants: { orderBy: { sortOrder: 'asc' } } },
       },
     },
   });
@@ -37,14 +37,16 @@ exportData.get('/', async (c) => {
       items: cat.items.map((item) => ({
         name: item.name,
         description: item.description,
-        consumerPrice: Number(item.price),
-        financialPrice: Number(item.financialPrice),
+        basePrice: item.basePrice ? Number(item.basePrice) : null,
+        imageUrl: item.imageUrl,
         order: item.displayOrder,
         isAvailable: item.isAvailable,
         dietaryTags: item.dietaryTags,
-        imageCard: item.imageCard,
-        imageThumbnail: item.imageThumbnail,
-        imageFull: item.imageFull,
+        variants: item.variants.map((v) => ({
+          label: v.label,
+          price: Number(v.price),
+          sortOrder: v.sortOrder,
+        })),
         translations: Object.fromEntries(
           item.translations.map((t) => [t.locale, { name: t.name, description: t.description }]),
         ),
