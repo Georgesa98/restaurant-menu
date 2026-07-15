@@ -258,7 +258,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
             const v = item.variants.find((v) => v.id === variantId);
             if (v) {
               price = Number(v.price);
-              label = `${itemTrans.name} — ${v.label}`;
+              const vLabel = isRtl ? v.label : v.labelEn;
+              label = `${itemTrans.name} — ${vLabel}`;
             }
           } else {
             price = item.basePrice ? Number(item.basePrice) : 0;
@@ -774,7 +775,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                         });
                                       }}
                                     >
-                                      {v.label} · {formatPrice(Number(v.price), locale)}
+                                      {(isRtl ? v.label : v.labelEn)} · {formatPrice(Number(v.price), locale)}
                                     </button>
                                   );
                                 })}

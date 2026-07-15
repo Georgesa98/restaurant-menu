@@ -103,6 +103,7 @@ importData.post('/', async (c) => {
                     variants: {
                       create: item.variants.map((v: any, i: number) => ({
                         label: v.label,
+                        labelEn: v.labelEn ?? v.label,
                         price: v.price,
                         sortOrder: i,
                       })),
@@ -128,6 +129,7 @@ importData.post('/', async (c) => {
                     variants: {
                       create: item.variants.map((v: any, i: number) => ({
                         label: v.label,
+                        labelEn: v.labelEn ?? v.label,
                         price: v.price,
                         sortOrder: i,
                       })),

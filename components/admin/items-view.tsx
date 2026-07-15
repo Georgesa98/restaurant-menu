@@ -17,6 +17,7 @@ import { CSS } from '@dnd-kit/utilities';
 type VariantRow = {
   id?: string;
   label: string;
+  labelEn: string;
   price: number;
 };
 
@@ -269,7 +270,7 @@ export function ItemsView() {
   }
 
   function addVariant() {
-    setVariants((prev) => [...prev, { label: '', price: 0 }]);
+    setVariants((prev) => [...prev, { label: '', labelEn: '', price: 0 }]);
   }
 
   function updateVariant(index: number, field: keyof VariantRow, value: string | number) {
@@ -420,10 +421,16 @@ export function ItemsView() {
                 {variants.map((v, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <Input
-                      placeholder="Label (e.g. Large)"
+                      placeholder="Label (AR)"
                       value={v.label}
                       onChange={(e) => updateVariant(i, 'label', e.target.value)}
-                      className="flex-1"
+                      className="w-24"
+                    />
+                    <Input
+                      placeholder="Label (EN)"
+                      value={v.labelEn}
+                      onChange={(e) => updateVariant(i, 'labelEn', e.target.value)}
+                      className="w-24"
                     />
                     <Input
                       type="number"

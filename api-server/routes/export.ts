@@ -44,6 +44,7 @@ exportData.get('/', async (c) => {
         dietaryTags: item.dietaryTags,
         variants: item.variants.map((v) => ({
           label: v.label,
+          labelEn: v.labelEn,
           price: Number(v.price),
           sortOrder: v.sortOrder,
         })),

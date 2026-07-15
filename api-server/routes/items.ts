@@ -62,6 +62,7 @@ items.post('/', async (c) => {
             variants: {
               create: body.variants.map((v: any, i: number) => ({
                 label: v.label,
+                labelEn: v.labelEn ?? v.label,
                 price: v.price,
                 sortOrder: i,
               })),
@@ -97,6 +98,7 @@ items.put('/:id', async (c) => {
             variants: {
               create: body.variants.map((v: any, i: number) => ({
                 label: v.label,
+                labelEn: v.labelEn ?? v.label,
                 price: v.price,
                 sortOrder: i,
               })),

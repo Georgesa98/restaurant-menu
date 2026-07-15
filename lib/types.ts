@@ -47,6 +47,7 @@ export type TenantData = {
       variants: {
         id: string;
         label: string;
+        labelEn: string;
         price: { toString: () => string };
         sortOrder: number;
       }[];

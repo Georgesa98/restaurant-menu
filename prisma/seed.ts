@@ -412,6 +412,7 @@ async function main() {
               variants: {
                 create: item.variants.map((v, i) => ({
                   label: v.label,
+                  labelEn: v.labelEn,
                   price: v.price,
                   sortOrder: i,
                 })),

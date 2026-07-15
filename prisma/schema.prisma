@@ -194,7 +194,8 @@ model MenuItem {
 model MenuItemVariant {
   id         String   @id @default(uuid()) @db.Uuid
   menuItemId String   @db.Uuid
-  label      String
+  label      String                  // Arabic
+  labelEn    String                  // English
   price      Decimal  @db.Decimal(10, 2)
   sortOrder  Int      @default(0)
 
