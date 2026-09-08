@@ -16,7 +16,7 @@ categories.get('/', async (c) => {
   if (!effectiveTenantId) return c.json({ error: 'tenantId required' }, 400);
 
   const cats = await prisma.category.findMany({
-    where: { tenantId: effectiveTenantId },
+    where: { tenantId: effectiveTenantId, isDeleted: false },
     orderBy: { displayOrder: 'asc' },
     include: { translations: true },
   });
@@ -91,6 +91,15 @@ categories.patch('/reorder', async (c) => {
 
 categories.delete('/:id', async (c) => {
   const id = c.req.param('id');
-  await prisma.category.delete({ where: { id } });
+  const now = new Date();
+  // Soft delete: flag + tombstone, cascade the flag to items so delta sync
+  // removes them on tablets (docs/PLAN.md §18). Hard purge is super-admin only.
+  await prisma.$transaction([
+    prisma.category.update({ where: { id }, data: { isDeleted: true, updatedAt: now } }),
+    prisma.menuItem.updateMany({
+      where: { categoryId: id, isDeleted: false },
+      data: { isDeleted: true, updatedAt: now },
+    }),
+  ]);
   return c.json({ success: true });
 });

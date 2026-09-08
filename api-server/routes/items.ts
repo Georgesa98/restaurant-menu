@@ -19,10 +19,15 @@ items.get('/', async (c) => {
   const menuItems = await prisma.menuItem.findMany({
     where: {
       tenantId: effectiveTenantId,
+      isDeleted: false,
       ...(categoryId ? { categoryId } : {}),
     },
     orderBy: { displayOrder: 'asc' },
-    include: { translations: true, category: true, variants: { orderBy: { sortOrder: 'asc' } } },
+    include: {
+      translations: true,
+      category: true,
+      variants: { where: { isDeleted: false }, orderBy: { sortOrder: 'asc' } },
+    },
   });
 
   return c.json(menuItems);
@@ -32,7 +37,11 @@ items.get('/:id', async (c) => {
   const id = c.req.param('id');
   const menuItem = await prisma.menuItem.findUnique({
     where: { id },
-    include: { translations: true, category: true, variants: { orderBy: { sortOrder: 'asc' } } },
+    include: {
+      translations: true,
+      category: true,
+      variants: { where: { isDeleted: false }, orderBy: { sortOrder: 'asc' } },
+    },
   });
   if (!menuItem) return c.json({ error: 'Not found' }, 404);
   return c.json(menuItem);
@@ -79,8 +88,12 @@ items.put('/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
 
-  // replace variants atomically
-  await prisma.menuItemVariant.deleteMany({ where: { menuItemId: id } });
+  // replace variants atomically: tombstone the old set (delta sync removes
+  // them on tablets via the parent's new updatedAt), then create the new set
+  await prisma.menuItemVariant.updateMany({
+    where: { menuItemId: id, isDeleted: false },
+    data: { isDeleted: true },
+  });
 
   const menuItem = await prisma.menuItem.update({
     where: { id },
@@ -113,7 +126,11 @@ items.put('/:id', async (c) => {
 
 items.delete('/:id', async (c) => {
   const id = c.req.param('id');
-  await prisma.menuItem.delete({ where: { id } });
+  // Soft delete: tombstone for delta sync (docs/PLAN.md §18).
+  await prisma.menuItem.update({
+    where: { id },
+    data: { isDeleted: true, updatedAt: new Date() },
+  });
   return c.json({ success: true });
 });
 

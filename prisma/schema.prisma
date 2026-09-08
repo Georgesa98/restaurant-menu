@@ -157,6 +157,7 @@ model Category {
   description  String?
   displayOrder Int      @default(0)
   isActive     Boolean  @default(true)
+  isDeleted    Boolean  @default(false) // soft delete: tombstone for delta sync
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -179,6 +180,7 @@ model MenuItem {
   isAvailable Boolean  @default(true)
   displayOrder Int     @default(0)
   dietaryTags String[]
+  isDeleted   Boolean  @default(false) // soft delete: tombstone for delta sync
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -198,6 +200,7 @@ model MenuItemVariant {
   labelEn    String                  // English
   price      Decimal  @db.Decimal(10, 2)
   sortOrder  Int      @default(0)
+  isDeleted  Boolean  @default(false) // soft delete: replaced sets are tombstoned, not removed
 
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
 

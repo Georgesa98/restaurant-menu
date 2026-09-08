@@ -11,6 +11,7 @@ import { upload } from './routes/upload';
 import { exportData } from './routes/export';
 import { importData } from './routes/import';
 import { builds } from './routes/builds';
+import { sync } from './routes/sync';
 import { ensureBucket } from '../lib/storage';
 import { isOriginAllowed } from '../lib/origins';
 
@@ -33,6 +34,7 @@ app.route('/api/upload', upload);
 app.route('/api/export', exportData);
 app.route('/api/import', importData);
 app.route('/api/builds', builds);
+app.route('/api/sync', sync);
 
 app.get('/healthz', (c) => c.json({ ok: true }));
 
