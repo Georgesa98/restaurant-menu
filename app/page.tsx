@@ -2,11 +2,18 @@ import { prisma } from '@/lib/prisma';
 import Script from 'next/script';
 
 export default async function Home() {
-  const tenants = await prisma.tenant.findMany({
-    where: { isActive: true, slug: { not: null } },
-    orderBy: { name: 'asc' },
-    select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
-  }) as { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];
+  // DB is unreachable during `docker build` — render empty, the real export
+  // is rebuilt at container start (entrypoint.sh) with the DB reachable.
+  let tenants: { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[] = [];
+  try {
+    tenants = await prisma.tenant.findMany({
+      where: { isActive: true, slug: { not: null } },
+      orderBy: { name: 'asc' },
+      select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
+    }) as { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];
+  } catch {
+    console.warn('[build-fallback] Home: DB unreachable, using empty result');
+  }
 
   const domainMap: Record<string, { slug: string; locale: string }> = {};
   for (const t of tenants) {

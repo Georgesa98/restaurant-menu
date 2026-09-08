@@ -1,16 +1,16 @@
 # Menu platform — Coolify compose resource (repo root).
 # Services: api (Hono: /api/* + static out/ on :3001) + minio (S3).
-# DB stays external (Coolify-managed postgres, already running).
-# Domains: menu + *.menu (web), s3-menu (S3), minio-menu (console).
+# DB stays external (Coolify-managed postgres, already running, on `coolify` net).
+# NOTE: nothing runs during `docker compose build` and BuildKit cannot join the
+# `coolify` network, so the Docker build must NOT need the DB — migrate +
+# static export run at container start (entrypoint.sh), where the external DB
+# IS reachable.
 
 services:
   api:
     build:
       context: .
       dockerfile: Dockerfile
-      # Builder must resolve the Coolify-internal postgres hostname
-      # (migrate deploy + static prerender read the DB at build time).
-      network: coolify
       args:
         DATABASE_URL: '${DATABASE_URL}'
         DIRECT_URL: '${DIRECT_URL}'
@@ -37,7 +37,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      # Container start runs `next build` (minutes) before serving.
+      start_period: 300s
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
