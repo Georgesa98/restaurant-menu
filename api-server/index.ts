@@ -11,14 +11,15 @@ import { upload } from './routes/upload';
 import { exportData } from './routes/export';
 import { importData } from './routes/import';
 import { builds } from './routes/builds';
-import { streamFromBucket } from '../lib/storage';
+import { ensureBucket } from '../lib/storage';
+import { isOriginAllowed } from '../lib/origins';
 
 const app = new Hono();
 
 app.use(
   '/api/*',
   cors({
-    origin: (origin) => origin,
+    origin: (origin) => (isOriginAllowed(origin) ? origin : ''),
     credentials: true,
   }),
 );
@@ -32,21 +33,6 @@ app.route('/api/upload', upload);
 app.route('/api/export', exportData);
 app.route('/api/import', importData);
 app.route('/api/builds', builds);
-
-app.get('/uploads/*', async (c) => {
-  const key = c.req.path.slice(1);
-  try {
-    const { stream, contentType } = await streamFromBucket(key);
-    return new Response(stream, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000',
-      },
-    });
-  } catch {
-    return c.notFound();
-  }
-});
 
 app.get('/*', async (c) => {
   const { serveStatic } = await import('@hono/node-server/serve-static');
@@ -70,6 +56,12 @@ app.onError((err, c) => {
 
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 
-serve({ fetch: app.fetch, port }, () => {
+serve({ fetch: app.fetch, port }, async () => {
+  try {
+    await ensureBucket();
+    console.log(`Storage bucket ready`);
+  } catch (err) {
+    console.error('Storage bucket ensure failed (uploads will 500)', err);
+  }
   console.log(`API server running on http://localhost:${port}`);
 });

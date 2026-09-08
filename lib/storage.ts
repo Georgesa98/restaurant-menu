@@ -1,5 +1,10 @@
-import { Readable } from 'stream';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadBucketCommand,
+  CreateBucketCommand,
+  PutBucketPolicyCommand,
+} from '@aws-sdk/client-s3';
 
 const endpoint = process.env.STORAGE_ENDPOINT;
 const region = process.env.STORAGE_REGION ?? 'auto';
@@ -54,13 +59,34 @@ export async function uploadToBucket(
   return results;
 }
 
-export async function streamFromBucket(key: string) {
+/**
+ * Ensure the bucket exists and is public-read-only (GetObject for anyone,
+ * all writes still require credentials). Safe to call on every boot.
+ * Direct public S3 URLs only work if this policy is in place.
+ */
+export async function ensureBucket() {
   if (!bucket) throw new Error('STORAGE_BUCKET not configured');
 
-  const { Body, ContentType } = await s3().send(
-    new GetObjectCommand({ Bucket: bucket, Key: key }),
-  );
+  try {
+    await s3().send(new HeadBucketCommand({ Bucket: bucket }));
+  } catch {
+    await s3().send(new CreateBucketCommand({ Bucket: bucket }));
+  }
 
-  const stream = Readable.toWeb(Body as Readable);
-  return { stream, contentType: ContentType ?? 'image/webp' };
+  await s3().send(
+    new PutBucketPolicyCommand({
+      Bucket: bucket,
+      Policy: JSON.stringify({
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: '*',
+            Action: ['s3:GetObject'],
+            Resource: [`arn:aws:s3:::${bucket}/*`],
+          },
+        ],
+      }),
+    }),
+  );
 }

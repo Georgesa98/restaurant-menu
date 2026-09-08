@@ -36,7 +36,12 @@ upload.post('/', async (c) => {
     { key: `${base}_card@2x.webp`, buffer: retinaBuf, contentType: 'image/webp' },
   ]);
 
+  // Direct public S3 URL — no Hono proxy. Bucket must be public-read.
+  const publicBase = process.env.STORAGE_PUBLIC_BASE_URL?.replace(/\/$/, '');
+  if (!publicBase)
+    return c.json({ error: 'STORAGE_PUBLIC_BASE_URL not configured' }, 500);
+
   return c.json({
-    url: `/${keys[`${base}_card`]}`,
+    url: `${publicBase}/${keys[`${base}_card`]}`,
   });
 });
