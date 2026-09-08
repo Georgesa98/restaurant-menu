@@ -8,6 +8,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Builder must resolve the Coolify-internal postgres hostname
+      # (migrate deploy + static prerender read the DB at build time).
+      network: coolify
       args:
         DATABASE_URL: '${DATABASE_URL}'
         DIRECT_URL: '${DIRECT_URL}'

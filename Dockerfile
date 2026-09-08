@@ -3,6 +3,8 @@ ARG NODE_VERSION=22.12.0
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
 WORKDIR /app
+# Prisma needs the OpenSSL CLI to detect the libssl version (bookworm = 3.x).
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@9
 
 # ---- dependencies (cached unless manifests change) ----
@@ -31,6 +33,8 @@ FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     PORT=3001
 WORKDIR /app
+# Prisma engines need OpenSSL at runtime too (separate FROM, doesn't inherit base).
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/out ./out
