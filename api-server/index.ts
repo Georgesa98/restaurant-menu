@@ -34,6 +34,8 @@ app.route('/api/export', exportData);
 app.route('/api/import', importData);
 app.route('/api/builds', builds);
 
+app.get('/healthz', (c) => c.json({ ok: true }));
+
 app.get('/*', async (c) => {
   const { serveStatic } = await import('@hono/node-server/serve-static');
   const res = await serveStatic({ root: './out' })(c, () => Promise.resolve());
