@@ -1,19 +1,14 @@
-import { Hono } from 'hono';
-import { prisma } from '../../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import type { Variables } from '../types';
+import { prisma } from '@/lib/prisma';
+import { requireSession } from '@/lib/require-session';
 
-export const exportData = new Hono<{ Variables: Variables }>();
+export async function GET(req: Request) {
+  const r = await requireSession();
+  if ('response' in r) return r.response;
+  const { userTenantId, userRole } = r.session;
 
-exportData.use('*', requireAuth);
-
-exportData.get('/', async (c) => {
-  const tenantId = c.req.query('tenantId');
-  const userTenantId = c.get('userTenantId');
-  const role = c.get('userRole');
-
-  const effectiveTenantId = role === 'SUPER_ADMIN' ? tenantId : userTenantId;
-  if (!effectiveTenantId) return c.json({ error: 'tenantId required' }, 400);
+  const tenantId = new URL(req.url).searchParams.get('tenantId');
+  const effectiveTenantId = userRole === 'SUPER_ADMIN' ? tenantId : userTenantId;
+  if (!effectiveTenantId) return Response.json({ error: 'tenantId required' }, { status: 400 });
 
   const categories = await prisma.category.findMany({
     where: { tenantId: effectiveTenantId },
@@ -55,5 +50,5 @@ exportData.get('/', async (c) => {
     })),
   };
 
-  return c.json(result);
-});
+  return Response.json(result);
+}

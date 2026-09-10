@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/client';
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_API_URL!,
+  // Same-origin: auth routes live at /api/auth on this host.
 });

@@ -1,78 +1,5 @@
-import { Hono } from 'hono';
-import { prisma } from '../../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import type { Variables } from '../types';
-
-export const sync = new Hono<{ Variables: Variables }>();
-
-// Tombstones older than this force a full re-pull (docs/PLAN.md §18).
-const STALE_CURSOR_DAYS = 30;
-
-/**
- * GET /api/sync/pull?slug=&tenantId=&since=ISO
- * Public (kiosk). First fetch omits `since` for a full dump; later polls send
- * `lastPullAt` and get only changed rows + tombstones. Children always ship
- * as the parent's complete current set — tablets replace them wholesale, so
- * translation/variant removals propagate without child tombstones.
- * Decimal prices serialize as strings (Prisma Decimal.toJSON).
- */
-sync.get('/pull', async (c) => {
-  const slug = c.req.query('slug');
-  const tenantIdQuery = c.req.query('tenantId');
-  const sinceRaw = c.req.query('since');
-
-  if (!slug && !tenantIdQuery) {
-    return c.json({ error: 'slug or tenantId required' }, 400);
-  }
-
-  const tenant = await prisma.tenant.findUnique({
-    where: slug ? { slug } : { id: tenantIdQuery! },
-  });
-  if (!tenant || !tenant.isActive) {
-    return c.json({ error: 'unknown tenant' }, 404);
-  }
-
-  const serverTime = new Date();
-  let since: Date | null = null;
-  if (sinceRaw) {
-    since = new Date(sinceRaw);
-    if (isNaN(since.getTime())) return c.json({ error: 'invalid since' }, 400);
-    if (serverTime.getTime() - since.getTime() > STALE_CURSOR_DAYS * 86400_000) {
-      return c.json(
-        { error: 'stale_cursor', serverTime: serverTime.toISOString() },
-        410,
-      );
-    }
-  }
-
-  const changed = since ? { updatedAt: { gt: since } } : {};
-
-  const [categories, items] = await Promise.all([
-    prisma.category.findMany({
-      where: { tenantId: tenant.id, ...changed },
-      include: { translations: true },
-      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-    }),
-    prisma.menuItem.findMany({
-      where: { tenantId: tenant.id, ...changed },
-      include: {
-        translations: true,
-        variants: {
-          where: { isDeleted: false },
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
-    }),
-  ]);
-
-  return c.json({
-    serverTime: serverTime.toISOString(),
-    tenant,
-    categories,
-    items,
-  });
-});
+import { prisma } from '@/lib/prisma';
+import { requireSession } from '@/lib/require-session';
 
 type CategoryUpsert = {
   id: string;
@@ -103,16 +30,17 @@ type ItemUpsert = {
  * Last-write-wins: a row the server touched after the tablet's `baseSince`
  * is a conflict (server kept, returned for the tablet to apply).
  */
-sync.post('/push', requireAuth, async (c) => {
-  const body = await c.req.json();
-  const userTenantId = c.get('userTenantId');
-  const role = c.get('userRole');
+export async function POST(req: Request) {
+  const r = await requireSession();
+  if ('response' in r) return r.response;
+  const { userTenantId, userRole } = r.session;
 
-  const tenantId = role === 'SUPER_ADMIN' ? body.tenantId : userTenantId;
-  if (!tenantId) return c.json({ error: 'tenantId required' }, 400);
+  const body = await req.json();
+  const tenantId = userRole === 'SUPER_ADMIN' ? body.tenantId : userTenantId;
+  if (!tenantId) return Response.json({ error: 'tenantId required' }, { status: 400 });
 
   const base = new Date(body.baseSince);
-  if (isNaN(base.getTime())) return c.json({ error: 'invalid baseSince' }, 400);
+  if (isNaN(base.getTime())) return Response.json({ error: 'invalid baseSince' }, { status: 400 });
 
   const now = new Date();
   const acceptedCategoryIds: string[] = [];
@@ -305,9 +233,9 @@ sync.post('/push', requireAuth, async (c) => {
     }
   }
 
-  return c.json({
+  return Response.json({
     serverTime: now.toISOString(),
     accepted: { categoryIds: acceptedCategoryIds, itemIds: acceptedItemIds },
     conflicts: { categories: conflictCategories, items: conflictItems },
   });
-});
+}

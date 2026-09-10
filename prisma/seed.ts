@@ -438,13 +438,15 @@ async function main() {
   console.log(`Seeded 1 tenant, ${categoriesData.length} categories, ${totalItems} items, ${totalVariants} variants`);
 
   console.log('Creating super admin...');
-  const existing = await prisma.user.findUnique({ where: { email: 'admin@valleystar.com' } });
+  const superEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@valleystar.com';
+  const superPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123456';
+  const existing = await prisma.user.findUnique({ where: { email: superEmail } });
   if (!existing) {
-    const hashedPassword = await bcrypt.hash('admin123456', 10);
+    const hashedPassword = await bcrypt.hash(superPassword, 10);
     const user = await prisma.user.create({
       data: {
         name: 'Super Admin',
-        email: 'admin@valleystar.com',
+        email: superEmail,
         emailVerified: true,
         role: 'SUPER_ADMIN',
       },
@@ -457,7 +459,7 @@ async function main() {
         password: hashedPassword,
       },
     });
-    console.log('Created super admin: admin@valleystar.com / admin123456');
+    console.log(`Created super admin: ${superEmail}`);
   } else {
     console.log('Super admin already exists — skipping');
   }

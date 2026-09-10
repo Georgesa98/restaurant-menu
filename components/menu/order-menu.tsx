@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import type { TenantData, WithTranslations } from '@/lib/types';
 import { LanguageSwitcher } from './language-switcher';
@@ -812,12 +813,12 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                         <article key={item.id} className="menu-card">
                           <div className="menu-card-image-wrap" style={{ background: '#EDE7DB' }}>
                             {item.imageUrl ? (
-                              <img
+                              <Image
                                 src={item.imageUrl}
                                 alt={itemTrans.name}
-                                loading="lazy"
                                 width={400}
                                 height={300}
+                                sizes="(max-width:640px)100vw,(max-width:1024px)50vw,33vw"
                                 className="w-full h-full object-cover"
                               />
                             ) : (

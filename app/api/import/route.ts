@@ -1,11 +1,5 @@
-import { Hono } from 'hono';
-import { prisma } from '../../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import type { Variables } from '../types';
-
-export const importData = new Hono<{ Variables: Variables }>();
-
-importData.use('*', requireAuth);
+import { prisma } from '@/lib/prisma';
+import { requireSession } from '@/lib/require-session';
 
 const EN_CATEGORY_NAMES: Record<string, string> = {
   'مشروبات ساخنة': 'Hot Drinks',
@@ -30,17 +24,18 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-importData.post('/', async (c) => {
-  const tenantId = c.req.query('tenantId');
-  const userTenantId = c.get('userTenantId');
-  const role = c.get('userRole');
+export async function POST(req: Request) {
+  const r = await requireSession();
+  if ('response' in r) return r.response;
+  const { userTenantId, userRole } = r.session;
 
-  const effectiveTenantId = role === 'SUPER_ADMIN' ? tenantId : userTenantId;
-  if (!effectiveTenantId) return c.json({ error: 'tenantId required' }, 400);
+  const tenantId = new URL(req.url).searchParams.get('tenantId');
+  const effectiveTenantId = userRole === 'SUPER_ADMIN' ? tenantId : userTenantId;
+  if (!effectiveTenantId) return Response.json({ error: 'tenantId required' }, { status: 400 });
 
-  const body = await c.req.json();
+  const body = await req.json();
   if (!body.categories || !Array.isArray(body.categories)) {
-    return c.json({ error: 'Invalid format: categories array required' }, 400);
+    return Response.json({ error: 'Invalid format: categories array required' }, { status: 400 });
   }
 
   let catCount = 0;
@@ -165,8 +160,8 @@ importData.post('/', async (c) => {
     }
   }
 
-  return c.json({
+  return Response.json({
     imported: { categories: catCount, items: itemCount, translations: trCount },
     errors: errors.length > 0 ? errors : undefined,
   });
-});
+}

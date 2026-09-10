@@ -4,9 +4,14 @@ import createNextIntlPlugin from 'next-intl/plugin';
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
-  output: 'export',
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 's3-menu.georgesalebe.me',
+        pathname: '/menu-media/**',
+      },
+    ],
   },
   trailingSlash: true,
 };

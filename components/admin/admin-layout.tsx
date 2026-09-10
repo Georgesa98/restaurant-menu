@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from './auth-provider';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from './export-button';
-import { RebuildButton } from './rebuild-button';
 import { ListTree, UtensilsCrossed, Building2, Upload, LogOut } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -80,7 +79,6 @@ export function AdminLayout({
             Import
           </Button>
           <ExportButton />
-          <RebuildButton />
           <Button
             variant="ghost"
             size="sm"

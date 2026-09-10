@@ -20,6 +20,8 @@ services:
       - 'DIRECT_URL=${DIRECT_URL}'
       - 'BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}'
       - 'BETTER_AUTH_URL=${BETTER_AUTH_URL}'
+      - 'SUPER_ADMIN_EMAIL=${SUPER_ADMIN_EMAIL:-}'
+      - 'SUPER_ADMIN_PASSWORD=${SUPER_ADMIN_PASSWORD:-}'
       - 'NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}'
       - 'TENANT_DEFAULT_SLUG=${TENANT_DEFAULT_SLUG}'
       - 'TRUSTED_ORIGINS=${TRUSTED_ORIGINS:-}'
@@ -29,7 +31,6 @@ services:
       - 'STORAGE_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}'
       - STORAGE_BUCKET=menu-media
       - 'STORAGE_PUBLIC_BASE_URL=${STORAGE_PUBLIC_BASE_URL}'
-      - 'COOLIFY_BUILD_HOOK=${COOLIFY_BUILD_HOOK:-}'
       - PORT=3001
     restart: unless-stopped
     healthcheck:
@@ -37,8 +38,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      # Container start runs `next build` (minutes) before serving.
-      start_period: 300s
+      start_period: 20s
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
