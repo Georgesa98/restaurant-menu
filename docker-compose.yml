@@ -96,6 +96,9 @@ services:
       - traefik.http.routers.s3menu-https.tls.certresolver=letsencrypt
       - traefik.http.routers.s3menu-https.service=s3menu-svc
       - traefik.http.services.s3menu-svc.loadbalancer.server.port=9000
+      - traefik.http.routers.miniomenu-http.rule=Host(`minio-menu.georgesalebe.me`)
+      - traefik.http.routers.miniomenu-http.entrypoints=http
+      - traefik.http.routers.miniomenu-http.middlewares=redirect-to-https
       - traefik.http.routers.miniomenu.rule=Host(`minio-menu.georgesalebe.me`)
       - traefik.http.routers.miniomenu.entrypoints=https
       - traefik.http.routers.miniomenu.tls.certresolver=letsencrypt
