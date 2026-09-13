@@ -40,6 +40,8 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/next.config.ts ./
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./
+COPY --from=build /app/lib ./lib
+COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
 EXPOSE 3001
