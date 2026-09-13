@@ -326,8 +326,8 @@ const itemsData: SeedItem[] = [
   ]},
 ];
 
-async function main() {
-  console.log('Clearing existing data...');
+async function seedDemoDataset() {
+  console.log('Clearing existing data... (--demo only)');
   await prisma.menuItemTranslation.deleteMany();
   await prisma.menuItemVariant.deleteMany();
   await prisma.categoryTranslation.deleteMany();
@@ -436,8 +436,10 @@ async function main() {
   const totalItems = itemsData.length;
   const totalVariants = itemsData.reduce((sum, i) => sum + (i.variants?.length ?? 0), 0);
   console.log(`Seeded 1 tenant, ${categoriesData.length} categories, ${totalItems} items, ${totalVariants} variants`);
+}
 
-  console.log('Creating super admin...');
+async function ensureSuperAdmin() {
+  console.log('Ensuring super admin...');
   const superEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@valleystar.com';
   const superPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123456';
   const existing = await prisma.user.findUnique({ where: { email: superEmail } });
@@ -463,6 +465,20 @@ async function main() {
   } else {
     console.log('Super admin already exists — skipping');
   }
+}
+
+async function main() {
+  const withDemo = process.argv.includes('--demo');
+  if (!withDemo) {
+    console.log('Seed: admin-only mode (pass --demo for the valley-star dataset)');
+    await ensureSuperAdmin();
+    return;
+  }
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== '1') {
+    throw new Error('Refusing --demo seed in production without ALLOW_DEMO_SEED=1');
+  }
+  await seedDemoDataset();
+  await ensureSuperAdmin();
 }
 
 main()
