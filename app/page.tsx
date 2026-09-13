@@ -1,15 +1,29 @@
+import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import Script from 'next/script';
+import { Navbar } from '@/components/landing/navbar';
+import { Hero } from '@/components/landing/hero';
+import { Features } from '@/components/landing/features';
+import { Showcase } from '@/components/landing/showcase';
+import { HowItWorks } from '@/components/landing/how-it-works';
+import { Pricing } from '@/components/landing/pricing';
+import { Faq } from '@/components/landing/faq';
+import { Contact, Footer } from '@/components/landing/contact';
 
-// Fully dynamic landing (domain map read per request).
+// Fully dynamic sales landing (Arabic-first). Only the custom-domain map is
+// read from the DB — no tenant data is rendered or exposed here.
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'نظام المنيو | منيو إلكتروني لمطعمك',
+  description: 'صفحة منيو باسم مطعمك، بالعربي والإنجليزي، بتتحدث لحالا. احكينا واتساب.',
+};
 
 export default async function Home() {
   const tenants = await prisma.tenant.findMany({
     where: { isActive: true, slug: { not: null } },
-    orderBy: { name: 'asc' },
-    select: { slug: true, name: true, description: true, primaryColor: true, domain: true, defaultLocale: true },
-  }) as { slug: string; name: string; description: string | null; primaryColor: string; domain: string | null; defaultLocale: string }[];
+    select: { slug: true, domain: true, defaultLocale: true },
+  }) as { slug: string; domain: string | null; defaultLocale: string }[];
 
   const domainMap: Record<string, { slug: string; locale: string }> = {};
   for (const t of tenants) {
@@ -17,7 +31,7 @@ export default async function Home() {
   }
 
   return (
-    <>
+    <div lang="ar" dir="rtl">
       <Script
         id="domain-redirect"
         strategy="beforeInteractive"
@@ -25,26 +39,17 @@ export default async function Home() {
           __html: `(function(){var m=${JSON.stringify(domainMap)};var entry=m[location.hostname];if(entry){var lang=navigator.language&&navigator.language.startsWith("ar")?"ar":entry.locale;if(!location.pathname.startsWith("/"+lang+"/"+entry.slug))location.replace("/"+lang+"/"+entry.slug+"/menu/")}})()`,
         }}
       />
-      <main className="max-w-2xl mx-auto px-4 py-16">
-        <h1 className="text-3xl font-bold mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
-          Restaurant Menus
-        </h1>
-        <p className="text-[var(--text-muted)] mb-8">Choose a restaurant to view their menu</p>
-        <div className="grid gap-4">
-          {tenants.map((t) => (
-            <a
-              key={t.slug}
-              href={`/en/${t.slug}/menu`}
-              className="block p-5 bg-[var(--surface)] rounded-[var(--radius-md)] shadow-[var(--shadow)] hover:shadow-md transition-shadow border-l-4"
-              style={{ borderLeftColor: t.primaryColor }}
-            >
-              <h2 className="text-lg font-semibold">{t.name}</h2>
-              {t.description && <p className="text-sm text-[var(--text-muted)] mt-1">{t.description}</p>}
-              {t.domain && <p className="text-xs mt-1 opacity-60">{t.domain}</p>}
-            </a>
-          ))}
-        </div>
+      <Navbar />
+      <main>
+        <Hero />
+        <Features />
+        <Showcase />
+        <HowItWorks />
+        <Pricing />
+        <Faq />
+        <Contact />
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }

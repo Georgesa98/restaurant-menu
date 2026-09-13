@@ -18,9 +18,11 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# NEXT_PUBLIC_APP_URL is baked into the client bundle where referenced.
+# NEXT_PUBLIC_* vars are baked into the client bundle where referenced.
 ARG NEXT_PUBLIC_APP_URL
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ARG NEXT_PUBLIC_WHATSAPP
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
+    NEXT_PUBLIC_WHATSAPP=${NEXT_PUBLIC_WHATSAPP}
 RUN pnpm run build
 
 # ---- runtime: migrate (at start) + next start ----
