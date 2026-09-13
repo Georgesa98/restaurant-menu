@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { prisma } from '../lib/prisma';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from 'better-auth/crypto';
 
 const categoriesData = [
   { nameAr: 'مشروبات ساخنة', nameEn: 'Hot Drinks', slug: 'hot-drinks', order: 1, descriptionAr: 'مشروباتنا الساخنة الطازجة لبداية يومك', descriptionEn: 'Fresh hot beverages to start your day' },
@@ -444,7 +444,7 @@ async function ensureSuperAdmin() {
   const superPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123456';
   const existing = await prisma.user.findUnique({ where: { email: superEmail } });
   if (!existing) {
-    const hashedPassword = await bcrypt.hash(superPassword, 10);
+    const hashedPassword = await hashPassword(superPassword);
     const user = await prisma.user.create({
       data: {
         name: 'Super Admin',
@@ -457,7 +457,7 @@ async function ensureSuperAdmin() {
       data: {
         userId: user.id,
         accountId: user.id,
-        providerId: 'email',
+        providerId: 'credential',
         password: hashedPassword,
       },
     });
