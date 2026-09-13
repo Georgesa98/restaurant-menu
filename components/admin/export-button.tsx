@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useAuth } from './auth-provider';
+import { cn } from '@/lib/utils';
 
 export function ExportButton({ className }: { className?: string }) {
   const [loading, setLoading] = useState(false);
@@ -46,9 +47,12 @@ export function ExportButton({ className }: { className?: string }) {
       size="sm"
       onClick={handleExport}
       disabled={loading}
-      className={`w-full justify-start gap-2.5 text-sidebar-foreground/40 hover:text-sidebar-foreground ${className ?? ''}`}
+      className={cn(
+        'h-9 w-full justify-start gap-2.5 rounded-xl px-3 text-[13.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+        className
+      )}
     >
-      <Download className="size-4" />
+      <Download className="size-[18px]" strokeWidth={1.9} />
       {loading ? 'Exporting...' : 'Export'}
     </Button>
   );

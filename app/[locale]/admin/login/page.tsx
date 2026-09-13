@@ -4,7 +4,7 @@ import { useState, FormEvent, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,38 +36,47 @@ export default function AdminLoginPage({ params: paramsPromise }: { params: Prom
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center px-4" style={{ background: '#141514' }}>
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center size-12 rounded-xl bg-primary text-primary-foreground mb-2">
-            <UtensilsCrossed className="size-6" />
+    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/60 px-4 py-10">
+      <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-sm flex-col justify-center">
+        <div className="mb-8 space-y-3 text-center">
+          <div className="mx-auto flex size-13 w-fit items-center justify-center rounded-2xl bg-primary p-3 text-primary-foreground shadow-lg shadow-primary/25">
+            <UtensilsCrossed className="size-7" strokeWidth={1.8} />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-wide">MenuHost</h1>
-          <p className="text-sm text-white/40">Restaurant menu management</p>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">MenuHost</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Restaurant menu management</p>
+          </div>
         </div>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-center text-base">{t('login')}</CardTitle>
+        <Card className="border-border/70 shadow-xl shadow-black/[0.04]">
+          <CardHeader className="pb-2 text-center">
+            <CardTitle className="text-lg">{t('login')}</CardTitle>
+            <CardDescription>Sign in to manage your menus</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                <div
+                  role="alert"
+                  className="rounded-xl border border-destructive/25 bg-destructive/[0.07] px-3.5 py-2.5 text-[13px] font-medium text-destructive"
+                >
                   {error}
                 </div>
               )}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="email">{t('email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@restaurant.com"
                   required
                   autoFocus
+                  autoComplete="email"
+                  className="h-10 bg-background"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="password">{t('password')}</Label>
                 <Input
                   id="password"
@@ -75,14 +84,19 @@ export default function AdminLoginPage({ params: paramsPromise }: { params: Prom
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="current-password"
+                  className="h-10 bg-background"
                 />
               </div>
-              <Button type="submit" disabled={loading} className="w-full">
+              <Button type="submit" disabled={loading} className="h-10 w-full text-[15px] font-semibold">
                 {loading ? t('signingIn') : t('login')}
               </Button>
             </form>
           </CardContent>
         </Card>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Protected area — authorized staff only
+        </p>
       </div>
     </div>
   );
