@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, use } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
@@ -10,8 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UtensilsCrossed } from 'lucide-react';
 
-export default function AdminLoginPage({ params: paramsPromise }: { params: Promise<{ locale: string }> }) {
-  const { locale } = use(paramsPromise);
+export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,7 +25,7 @@ export default function AdminLoginPage({ params: paramsPromise }: { params: Prom
     try {
       const res = await api.post('/api/auth/sign-in/email', { email, password });
       if (res.data.token) {
-        router.push(`/${locale}/admin`);
+        router.push(`/admin`);
       }
     } catch {
       setError(t('invalidCredentials'));

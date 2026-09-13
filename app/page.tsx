@@ -22,12 +22,12 @@ export const metadata: Metadata = {
 export default async function Home() {
   const tenants = await prisma.tenant.findMany({
     where: { isActive: true, slug: { not: null } },
-    select: { slug: true, domain: true, defaultLocale: true },
-  }) as { slug: string; domain: string | null; defaultLocale: string }[];
+    select: { slug: true, domain: true },
+  }) as { slug: string; domain: string | null }[];
 
-  const domainMap: Record<string, { slug: string; locale: string }> = {};
+  const domainMap: Record<string, string> = {};
   for (const t of tenants) {
-    if (t.domain) domainMap[t.domain] = { slug: t.slug, locale: t.defaultLocale };
+    if (t.domain) domainMap[t.domain] = t.slug;
   }
 
   return (
@@ -36,7 +36,7 @@ export default async function Home() {
         id="domain-redirect"
         strategy="beforeInteractive"
         dangerouslySetInnerHTML={{
-          __html: `(function(){var m=${JSON.stringify(domainMap)};var entry=m[location.hostname];if(entry){var lang=navigator.language&&navigator.language.startsWith("ar")?"ar":entry.locale;if(!location.pathname.startsWith("/"+lang+"/"+entry.slug))location.replace("/"+lang+"/"+entry.slug+"/menu/")}})()`,
+          __html: `(function(){var m=${JSON.stringify(domainMap)};var slug=m[location.hostname];if(slug){if(!document.cookie.match(/(?:^|; )locale=/)){var l=navigator.language&&navigator.language.toLowerCase().startsWith("ar")?"ar":"en";document.cookie="locale="+l+";path=/;max-age=31536000;SameSite=Lax"}if(!location.pathname.startsWith("/"+slug+"/"))location.replace("/"+slug+"/menu/")}})()`,
         }}
       />
       <Navbar />

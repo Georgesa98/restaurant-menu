@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { getLocale } from 'next-intl/server';
 import { MenuPage } from '@/components/menu/menu-page';
 import { getTenantWithCategory } from '@/lib/queries';
 
@@ -8,9 +9,10 @@ export const dynamic = 'force-dynamic';
 export default async function CategoryMenuRoute({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string; categorySlug: string }>;
+  params: Promise<{ slug: string; categorySlug: string }>;
 }) {
-  const { locale, slug, categorySlug } = await params;
+  const { slug, categorySlug } = await params;
+  const locale = await getLocale();
 
   const data = await getTenantWithCategory(slug, categorySlug, locale);
 

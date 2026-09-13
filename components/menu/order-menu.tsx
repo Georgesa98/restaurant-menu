@@ -694,7 +694,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
         {/* Hero header */}
         <header className="relative text-center px-4 pt-8 pb-6" style={{ background: 'var(--bg)' }}>
           <div className={`absolute top-4 ${isRtl ? 'left-4' : 'right-4'}`}>
-            <LanguageSwitcher locale={locale} slug={tenant.slug} />
+            <LanguageSwitcher locale={locale} />
           </div>
 
           {tenant.logoUrl ? (

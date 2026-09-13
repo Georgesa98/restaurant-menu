@@ -24,7 +24,7 @@ const AuthCtx = createContext<AuthContext>({
   signOut: async () => {},
 });
 
-export function AuthProvider({ children, locale }: { children: ReactNode; locale: string }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -36,19 +36,19 @@ export function AuthProvider({ children, locale }: { children: ReactNode; locale
         if (res.data?.user) {
           setUser(res.data.user);
         } else {
-          router.replace(`/${locale}/admin/login`);
+          router.replace(`/admin/login`);
         }
       })
       .catch(() => {
-        router.replace(`/${locale}/admin/login`);
+        router.replace(`/admin/login`);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   async function signOut() {
     await api.post('/api/auth/sign-out', {}, { withCredentials: true });
     setUser(null);
-    router.replace(`/${locale}/admin/login`);
+    router.replace(`/admin/login`);
   }
 
   if (loading) {

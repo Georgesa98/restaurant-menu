@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Playfair_Display, Jost, Alex_Brush, Amiri } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { cn } from '@/lib/utils';
 
 const playfair = Playfair_Display({
@@ -37,9 +39,15 @@ export const metadata: Metadata = {
   description: 'Digital menus for restaurants',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const dir = locale === 'ar' ? 'rtl' : 'ltr';
+
   return (
     <html
+      lang={locale}
+      dir={dir}
       suppressHydrationWarning
       className={cn(
         'font-sans',
@@ -49,7 +57,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         amiri.variable
       )}
     >
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }
