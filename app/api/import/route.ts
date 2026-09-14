@@ -91,7 +91,6 @@ export async function POST(req: Request) {
               imageUrl: item.imageUrl ?? null,
               displayOrder: item.order ?? 0,
               isAvailable: item.isAvailable ?? true,
-              dietaryTags: item.dietaryTags ?? [],
               categoryId: category.id,
               ...(hasVariants
                 ? {
@@ -118,7 +117,6 @@ export async function POST(req: Request) {
               imageUrl: item.imageUrl ?? null,
               displayOrder: item.order ?? 0,
               isAvailable: item.isAvailable ?? true,
-              dietaryTags: item.dietaryTags ?? [],
               ...(hasVariants
                 ? {
                     variants: {

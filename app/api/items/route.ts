@@ -49,7 +49,6 @@ export async function POST(req: Request) {
       imageUrl: body.imageUrl ?? null,
       isAvailable: body.isAvailable ?? true,
       displayOrder: body.displayOrder ?? 0,
-      dietaryTags: body.dietaryTags ?? [],
       ...(body.variants?.length
         ? {
             variants: {

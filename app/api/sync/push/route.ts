@@ -20,7 +20,9 @@ type ItemUpsert = {
   imageUrl?: string | null;
   isAvailable?: boolean;
   displayOrder?: number;
-  dietaryTags?: string[];
+  // Deprecated: ignored. Pre-v2 APKs still send it; never passed to Prisma.
+  // TODO: remove entirely after pre-v2 sunset.
+  dietaryTags?: unknown;
   translations?: { locale: string; name: string; description?: string | null }[];
   variants?: { id?: string; label: string; labelEn?: string; price: number | string; sortOrder?: number }[];
 };
@@ -167,7 +169,6 @@ export async function POST(req: Request) {
               imageUrl: iu.imageUrl ?? null,
               isAvailable: iu.isAvailable ?? true,
               displayOrder: iu.displayOrder ?? 0,
-              dietaryTags: iu.dietaryTags ?? [],
               isDeleted: false,
               updatedAt: now,
             },
@@ -187,7 +188,6 @@ export async function POST(req: Request) {
               ...(iu.imageUrl !== undefined ? { imageUrl: iu.imageUrl } : {}),
               ...(iu.isAvailable !== undefined ? { isAvailable: iu.isAvailable } : {}),
               ...(iu.displayOrder !== undefined ? { displayOrder: iu.displayOrder } : {}),
-              ...(iu.dietaryTags !== undefined ? { dietaryTags: iu.dietaryTags } : {}),
               isDeleted: false,
               updatedAt: now,
             },

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { prisma } from '../lib/prisma';
-import { hashPassword } from 'better-auth/crypto';
+import { hashPassword, verifyPassword } from 'better-auth/crypto';
 
 const categoriesData = [
   { nameAr: 'مشروبات ساخنة', nameEn: 'Hot Drinks', slug: 'hot-drinks', order: 1, descriptionAr: 'مشروباتنا الساخنة الطازجة لبداية يومك', descriptionEn: 'Fresh hot beverages to start your day' },
@@ -406,7 +406,6 @@ async function seedDemoDataset() {
         basePrice: item.variants ? null : item.basePrice,
         displayOrder: item.order,
         isAvailable: item.isAvailable ?? true,
-        dietaryTags: [],
         ...(item.variants
           ? {
               variants: {
@@ -444,16 +443,52 @@ async function ensureUser({
   role,
   tenantId,
   password,
+  username,
 }: {
   email: string;
   name: string;
   role: string;
   tenantId: string | null;
   password: string;
+  username: string;
 }) {
-  const existing = await prisma.user.findUnique({ where: { email } });
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    include: { accounts: { where: { providerId: 'credential' } } },
+  });
   if (existing) {
-    console.log(`User ${email} already exists — skipping`);
+    // Reconcile (never silently skip): backfill username and rotate the
+    // password when it drifted from the seed source of truth. Without this,
+    // changing SUPER_ADMIN_PASSWORD in .env has no effect and login 401s.
+    // Seed is the sole writer of usernames (no UI edits them), so align
+    // any drift — e.g. usernames created under the old dashed scheme that
+    // better-auth's validator rejects (only alphanumerics, _ and . allowed).
+    if (existing.username !== username || !existing.displayUsername) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { username, displayUsername: username },
+      });
+      console.log(`Updated ${role} username: ${email} → ${username}`);
+    }
+    const cred = existing.accounts[0];
+    const matches = cred?.password
+      ? await verifyPassword({ hash: cred.password, password })
+      : false;
+    if (!matches) {
+      await prisma.account.upsert({
+        where: { id: cred?.id ?? '' },
+        update: { password: await hashPassword(password) },
+        create: {
+          userId: existing.id,
+          accountId: existing.id,
+          providerId: 'credential',
+          password: await hashPassword(password),
+        },
+      });
+      console.log(`Updated ${role} password: ${email}`);
+    } else {
+      console.log(`User ${email} already exists — in sync`);
+    }
     return existing;
   }
   const hashedPassword = await hashPassword(password);
@@ -464,6 +499,8 @@ async function ensureUser({
       emailVerified: true,
       role,
       tenantId,
+      username,
+      displayUsername: username,
     },
   });
   await prisma.account.create({
@@ -474,7 +511,7 @@ async function ensureUser({
       password: hashedPassword,
     },
   });
-  console.log(`Created ${role}: ${email}`);
+  console.log(`Created ${role}: ${email} (username: ${username})`);
   return user;
 }
 
@@ -487,6 +524,7 @@ async function ensureSuperAdmin(password: string) {
     role: 'SUPER_ADMIN',
     tenantId: null,
     password,
+    username: 'superadmin',
   });
 }
 
@@ -504,6 +542,8 @@ async function ensureTenantAdmins(password: string) {
       role: 'TENANT_ADMIN',
       tenantId: tenant.id,
       password,
+      // Underscores: better-auth usernames allow [a-z0-9_.], not dashes.
+      username: `admin_${tenant.slug.replace(/-/g, '_')}`,
     });
   }
 }

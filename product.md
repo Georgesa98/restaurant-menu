@@ -15,7 +15,7 @@ A **lightweight, static, multi-tenant website** where restaurants get a beautifu
 | User                         | Goal                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------- |
 | **Restaurant owner / staff** | Update menu items, prices, categories, and theme colors — no technical skills needed              |
-| **Customer**                 | Browse the menu on their phone, see photos, prices, and dietary info — fast even on slow networks |
+| **Customer**                 | Browse the menu on their phone, see photos and prices — fast even on slow networks |
 | **Super admin (us)**         | Onboard new restaurants, configure custom domains, manage billing, oversee all tenants            |
 
 ---
@@ -25,8 +25,8 @@ A **lightweight, static, multi-tenant website** where restaurants get a beautifu
 ### Public Menu (Customer-facing)
 
 - View restaurant menu grouped by categories
-- See item name, description, price, photo, dietary tags
-- Filter by category or dietary preference
+- See item name, description, price, photo
+- Filter by category
 - Responsive design — works perfectly on mobile phones
 - Zero JavaScript on initial load (pure HTML/CSS)
 - Each restaurant gets its own domain or subdomain
@@ -275,7 +275,6 @@ model MenuItem {
   imageUrl     String?
   isAvailable  Boolean  @default(true)
   displayOrder Int      @default(0)
-  dietaryTags  String[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -422,10 +421,9 @@ const { data: session } = await authClient.useSession();
                  └─ <MenuItemCard>
                       ├─ <ItemPhoto />
                       ├─ <ItemInfo>
-                      │    ├─ name
-                      │    ├─ description
-                      │    ├─ dietary tags
-                      │    └─ price
+                       │    ├─ name
+                       │    ├─ description
+                       │    └─ price
                       └─ </ItemInfo>
                  └─ </MenuItemCard>
            </CategorySection>

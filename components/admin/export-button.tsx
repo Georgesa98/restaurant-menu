@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -8,6 +9,7 @@ import { useAuth } from './auth-provider';
 import { cn } from '@/lib/utils';
 
 export function ExportButton({ className }: { className?: string }) {
+  const t = useTranslations('admin');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
@@ -53,7 +55,7 @@ export function ExportButton({ className }: { className?: string }) {
       )}
     >
       <Download className="size-[18px]" strokeWidth={1.9} />
-      {loading ? 'Exporting...' : 'Export'}
+      {loading ? t('exporting') : t('export')}
     </Button>
   );
 }

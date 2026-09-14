@@ -428,8 +428,8 @@ Every semantic element gets a class name so custom CSS can target it:
 | Item name | `.menu-item-name` | `<h3>` |
 | Item price | `.menu-item-price` | Price `<span>` |
 | Item description | `.menu-item-description` | `<p>` description |
-| Item tags | `.menu-item-tags` | Dietary tag container |
-| Item tag pill | `.menu-item-tag` | Individual dietary tag |
+| Item tags | `.menu-item-tags` | ~~Dietary tag container~~ — removed with `dietaryTags` (2026-09-14) |
+| Item tag pill | `.menu-item-tag` | ~~Individual dietary tag~~ — removed with `dietaryTags` (2026-09-14) |
 | Qty controls | `.menu-item-qty` | +/- button container |
 | Qty button | `.menu-item-qty-btn` | Individual +/- button |
 | Footer | `.menu-footer` | Instagram link |

@@ -66,7 +66,6 @@ export async function POST(_req: Request, { params }: Params) {
           name: item.name,
           basePrice: item.price,
           displayOrder: ii,
-          dietaryTags: [],
         },
       });
       await prisma.menuItemTranslation.createMany({

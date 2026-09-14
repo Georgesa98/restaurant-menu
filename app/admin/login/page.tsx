@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import axios from 'axios';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { UtensilsCrossed } from 'lucide-react';
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,12 +24,18 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/api/auth/sign-in/email', { email, password });
+      const res = await api.post('/api/auth/sign-in/username', { username, password });
       if (res.data.token) {
         router.push(`/admin`);
       }
-    } catch {
-      setError(t('invalidCredentials'));
+    } catch (err) {
+      // axios throws identically for HTTP errors and network failures —
+      // don't blame the credentials when the server is unreachable.
+      if (axios.isAxiosError(err) && !err.response) {
+        setError(t('serverUnreachable'));
+      } else {
+        setError(t('invalidCredentials'));
+      }
     } finally {
       setLoading(false);
     }
@@ -62,17 +69,18 @@ export default function AdminLoginPage() {
                 </div>
               )}
               <div className="space-y-1.5">
-                <Label htmlFor="email">{t('email')}</Label>
+                <Label htmlFor="username">{t('username')}</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@restaurant.com"
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="superadmin"
                   required
                   autoFocus
-                  autoComplete="email"
+                  autoComplete="username"
                   className="h-10 bg-background"
+                  dir="ltr"
                 />
               </div>
               <div className="space-y-1.5">

@@ -120,7 +120,6 @@ function getPrice(item: WithTranslations<{
   imageUrl: string | null;
   isAvailable: boolean;
   displayOrder: number;
-  dietaryTags: string[];
   variants: { id: string; label: string; price: { toString: () => string }; sortOrder: number }[];
 }>): number {
   if (item.variants.length > 0) {
@@ -866,23 +865,6 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                                     </button>
                                   );
                                 })}
-                              </div>
-                            )}
-
-                            {item.dietaryTags.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {item.dietaryTags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full"
-                                    style={{
-                                      background: 'var(--secondary)',
-                                      color: 'var(--bg)',
-                                    }}
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
                               </div>
                             )}
 

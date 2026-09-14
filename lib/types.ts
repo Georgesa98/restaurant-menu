@@ -43,7 +43,6 @@ export type TenantData = {
       imageUrl: string | null;
       isAvailable: boolean;
       displayOrder: number;
-      dietaryTags: string[];
       variants: {
         id: string;
         label: string;

@@ -10,6 +10,8 @@ type User = {
   name: string;
   role: string;
   tenantId: string | null;
+  username?: string | null;
+  displayUsername?: string | null;
 };
 
 type AuthContext = {

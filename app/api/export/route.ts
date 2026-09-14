@@ -36,7 +36,6 @@ export async function GET(req: Request) {
         imageUrl: item.imageUrl,
         order: item.displayOrder,
         isAvailable: item.isAvailable,
-        dietaryTags: item.dietaryTags,
         variants: item.variants.map((v) => ({
           label: v.label,
           labelEn: v.labelEn,

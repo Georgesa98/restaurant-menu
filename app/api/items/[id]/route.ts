@@ -44,7 +44,6 @@ export async function PUT(req: Request, { params }: Params) {
       imageUrl: body.imageUrl,
       isAvailable: body.isAvailable,
       displayOrder: body.displayOrder,
-      dietaryTags: body.dietaryTags,
       ...(body.variants?.length
         ? {
             variants: {

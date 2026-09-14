@@ -17,7 +17,7 @@ model User {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   twoFactorEnabled Boolean?     @default(false)
-  username         String?
+  username         String?  @unique
   displayUsername  String?
   tenantId         String?
   role             String       @default("TENANT_ADMIN")
@@ -179,7 +179,6 @@ model MenuItem {
   imageUrl    String?                             // single photo for the whole card
   isAvailable Boolean  @default(true)
   displayOrder Int     @default(0)
-  dietaryTags String[]
   isDeleted   Boolean  @default(false) // soft delete: tombstone for delta sync
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

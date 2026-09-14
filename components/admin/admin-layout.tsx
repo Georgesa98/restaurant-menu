@@ -1,10 +1,14 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+import { setUserLocale } from '@/i18n/locale';
+import type { Locale } from '@/i18n/routing';
 import { useAuth } from './auth-provider';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from './export-button';
-import { ListTree, UtensilsCrossed, Building2, Upload, LogOut } from 'lucide-react';
+import { ListTree, UtensilsCrossed, Building2, Upload, LogOut, Languages } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +50,57 @@ function NavButton({
   );
 }
 
+function LocaleToggle() {
+  const locale = useLocale();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const otherLocale: Locale = locale === 'ar' ? 'en' : 'ar';
+
+  function switchLocale() {
+    startTransition(async () => {
+      await setUserLocale(otherLocale);
+      document.documentElement.lang = otherLocale;
+      document.documentElement.dir = otherLocale === 'ar' ? 'rtl' : 'ltr';
+      router.refresh();
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={switchLocale}
+      disabled={isPending}
+      className="flex h-9 w-full items-center gap-2.5 rounded-xl px-3 text-[13.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+    >
+      <Languages className="size-[18px]" strokeWidth={1.9} />
+      {otherLocale === 'ar' ? 'العربية' : 'English'}
+    </button>
+  );
+}
+
+function LocaleToggleCompact() {
+  const locale = useLocale();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const otherLocale: Locale = locale === 'ar' ? 'en' : 'ar';
+
+  function switchLocale() {
+    startTransition(async () => {
+      await setUserLocale(otherLocale);
+      document.documentElement.lang = otherLocale;
+      document.documentElement.dir = otherLocale === 'ar' ? 'rtl' : 'ltr';
+      router.refresh();
+    });
+  }
+
+  return (
+    <Button variant="ghost" size="sm" onClick={switchLocale} disabled={isPending} className="h-9 gap-2 rounded-xl px-3">
+      <Languages className="size-4" />
+      {otherLocale === 'ar' ? 'عربي' : 'EN'}
+    </Button>
+  );
+}
+
 export function AdminLayout({
   view,
   onNavigate,
@@ -70,7 +125,9 @@ export function AdminLayout({
             <span className="block truncate text-[15px] font-bold leading-tight tracking-tight">
               MenuHost
             </span>
-            <span className="block truncate text-xs text-muted-foreground">{user?.email}</span>
+            <span className="block truncate text-xs text-muted-foreground" dir="auto">
+              {user?.displayUsername ?? user?.username ?? user?.email}
+            </span>
           </span>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-2.5 lg:pb-4">
@@ -83,23 +140,24 @@ export function AdminLayout({
           {isSuper && (
             <NavButton active={view === 'tenants'} onClick={() => onNavigate('tenants')}>
               <Building2 className="size-[18px]" strokeWidth={1.9} />
-              Tenants
+              {t('tenants')}
             </NavButton>
           )}
           <span className="mx-1 hidden w-px self-stretch bg-border/70 lg:hidden" />
           <span className="lg:hidden">
             <NavButton active={view === 'import'} onClick={() => onNavigate('import')}>
               <Upload className="size-[18px]" strokeWidth={1.9} />
-              Import
+              {t('import')}
             </NavButton>
           </span>
         </nav>
         <div className="hidden border-t border-border/70 p-2.5 lg:block">
           <NavButton active={view === 'import'} onClick={() => onNavigate('import')}>
             <Upload className="size-[18px]" strokeWidth={1.9} />
-            Import
+            {t('import')}
           </NavButton>
           <ExportButton />
+          <LocaleToggle />
           <button
             onClick={signOut}
             className="flex h-9 w-full items-center gap-2.5 rounded-xl px-3 text-[13.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -112,6 +170,7 @@ export function AdminLayout({
           <span className="flex-1">
             <ExportButton />
           </span>
+          <LocaleToggleCompact />
           <Button variant="ghost" size="sm" onClick={signOut} className="h-9 gap-2 rounded-xl px-3">
             <LogOut className="size-4" />
             {t('logout')}

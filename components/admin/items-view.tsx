@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from './auth-provider';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,6 @@ type Item = {
   imageUrl: string | null;
   isAvailable: boolean;
   displayOrder: number;
-  dietaryTags: string[];
   category?: { name: string };
   translations: { locale: string; name: string; description: string | null }[];
   variants: VariantRow[];
@@ -40,18 +39,25 @@ type Category = { id: string; name: string };
 
 const LOCALES = ['en', 'ar'];
 
+function formatSyp(n: number, locale: string, isRange = false): string {
+  const num = n.toLocaleString('en-US');
+  return locale === 'ar' ? `${num} ل.س${isRange ? '+' : ''}` : `SYP ${num}${isRange ? '+' : ''}`;
+}
+
 function SortableCard({
   item,
   onEdit,
   onRemove,
   onToggleAvailability,
   t,
+  locale,
 }: {
   item: Item;
   onEdit: (i: Item) => void;
   onRemove: (id: string) => void;
   onToggleAvailability: (i: Item) => void;
   t: (key: string) => string;
+  locale: string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
@@ -61,10 +67,16 @@ function SortableCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const priceLabel = item.variants.length
-    ? `SYP ${Math.min(...item.variants.map((v) => v.price)).toLocaleString('en-US')}+`
-    : item.basePrice
-      ? `SYP ${item.basePrice.toLocaleString('en-US')}`
+  // SYP-only (locked to match Android). Latin digits always; suffix follows UI locale.
+  const priceLabel =
+    item.variants.length || item.basePrice
+      ? formatSyp(
+          item.variants.length
+            ? Math.min(...item.variants.map((v) => v.price))
+            : Number(item.basePrice),
+          locale,
+          item.variants.length > 0,
+        )
       : null;
 
   return (
@@ -79,7 +91,7 @@ function SortableCard({
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing touch-none"
-            aria-label="Drag to reorder"
+            aria-label={t('dragToReorder')}
           >
             <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
           </button>
@@ -88,7 +100,7 @@ function SortableCard({
             className={`size-2 rounded-full shrink-0 transition-colors ${
               item.isAvailable ? 'bg-amber' : 'bg-muted-foreground/30'
             }`}
-            title={item.isAvailable ? t('isAvailable') : 'notAvailable'}
+            title={item.isAvailable ? t('isAvailable') : t('notAvailable')}
           />
         </div>
         <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{item.category?.name}</span>
@@ -112,6 +124,7 @@ function SortableCard({
 
 export function ItemsView() {
   const t = useTranslations('admin');
+  const locale = useLocale();
   const { user } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -189,10 +202,6 @@ export function ItemsView() {
       imageUrl: (data.get('imageUrl') as string) || null,
       isAvailable: data.get('isAvailable') === 'on',
       displayOrder: Number(data.get('displayOrder')),
-      dietaryTags: (data.get('dietaryTags') as string)
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
       variants: variants.filter((v) => v.label.trim()),
     };
 
@@ -258,7 +267,6 @@ export function ItemsView() {
       imageUrl: null,
       isAvailable: true,
       displayOrder: 0,
-      dietaryTags: [],
       translations: [],
       variants: [],
     };
@@ -290,7 +298,7 @@ export function ItemsView() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold">{t('items')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{items.length} total</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('itemCount', { count: items.length })}</p>
         </div>
         <Button onClick={() => openEdit()}>
           <Plus className="size-4" />
@@ -300,7 +308,7 @@ export function ItemsView() {
 
       <div className="flex items-center gap-3 mb-4">
         <Input
-          placeholder="Search items…"
+          placeholder={t('searchItems')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-64"
@@ -315,7 +323,7 @@ export function ItemsView() {
                   : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
-              All
+              {t('all')}
             </button>
             {categories.map((c) => (
               <button
@@ -345,6 +353,7 @@ export function ItemsView() {
                 onRemove={remove}
                 onToggleAvailability={toggleAvailability}
                 t={t}
+                locale={locale}
               />
             ))}
           </div>
@@ -394,17 +403,17 @@ export function ItemsView() {
 
               <div className="space-y-2">
                 <Label>{t('name')}</Label>
-                <Input name="name" defaultValue={editing?.name} required />
+                <Input name="name" defaultValue={editing?.name} required dir="auto" />
               </div>
               <div className="space-y-2">
                 <Label>{t('description')}</Label>
-                <Input name="description" defaultValue={editing?.description ?? ''} />
+                <Input name="description" defaultValue={editing?.description ?? ''} dir="auto" />
               </div>
 
               {/* Price / Variants */}
               {variants.length === 0 ? (
                 <div className="space-y-2">
-                  <Label>Base price (SYP)</Label>
+                  <Label>{t('basePriceSyp')}</Label>
                   <Input name="basePrice" type="number" step="any" defaultValue={editing?.basePrice ?? ''} />
                 </div>
               ) : (
@@ -413,29 +422,31 @@ export function ItemsView() {
 
               <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-muted-foreground tracking-wide">VARIANTS</Label>
+                  <Label className="text-xs font-medium text-muted-foreground tracking-wide">{t('variants')}</Label>
                   <Button type="button" variant="outline" size="xs" onClick={addVariant}>
-                    <Plus className="size-3" /> Add variant
+                    <Plus className="size-3" /> {t('addVariant')}
                   </Button>
                 </div>
                 {variants.map((v, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <Input
-                      placeholder="Label (AR)"
+                      placeholder={t('variantLabelAr')}
                       value={v.label}
                       onChange={(e) => updateVariant(i, 'label', e.target.value)}
                       className="w-24"
+                      dir="auto"
                     />
                     <Input
-                      placeholder="Label (EN)"
+                      placeholder={t('variantLabelEn')}
                       value={v.labelEn}
                       onChange={(e) => updateVariant(i, 'labelEn', e.target.value)}
                       className="w-24"
+                      dir="auto"
                     />
                     <Input
                       type="number"
                       step="any"
-                      placeholder="Price"
+                      placeholder={t('price')}
                       value={v.price || ''}
                       onChange={(e) => updateVariant(i, 'price', parseFloat(e.target.value) || 0)}
                       className="w-28"
@@ -445,16 +456,12 @@ export function ItemsView() {
                     </Button>
                   </div>
                 ))}
-                {variants.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Add variants (e.g. Cup / Pot) or leave empty to use a single base price.
-                  </p>
-                )}
+                {variants.length === 0 && <p className="text-xs text-muted-foreground">{t('variantsHint')}</p>}
               </div>
 
               {/* Image */}
               <div className="space-y-2">
-                <Label>Image</Label>
+                <Label>{t('image')}</Label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -464,7 +471,7 @@ export function ItemsView() {
                     onClick={() => document.getElementById('image-upload')?.click()}
                   >
                     <Upload className="size-3.5" />
-                    {uploading ? 'Uploading…' : 'Upload'}
+                    {uploading ? t('uploading') : t('upload')}
                   </Button>
                   <input
                     id="image-upload"
@@ -482,7 +489,7 @@ export function ItemsView() {
                   <div className="relative mt-2 inline-block">
                     <img
                       src={preview}
-                      alt="Preview"
+                      alt={t('image')}
                       className="w-32 h-24 rounded-lg object-cover ring-1 ring-foreground/10"
                     />
                     <button
@@ -496,24 +503,16 @@ export function ItemsView() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>{t('dietaryTags')}</Label>
-                <Input
-                  name="dietaryTags"
-                  defaultValue={(editing?.dietaryTags ?? []).join(', ')}
-                  placeholder="e.g. vegan, gluten-free"
-                />
-              </div>
               <label className="flex items-center gap-2 text-sm">
                 <input name="isAvailable" type="checkbox" defaultChecked={editing?.isAvailable} />
                 {t('isAvailable')}
               </label>
 
               <div className="border-t pt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">TRANSLATIONS</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">{t('translations')}</p>
                 <div className="space-y-4">
                   {LOCALES.map((l) => (
-                    <div key={l} className="space-y-2 pl-3 border-l-2 border-primary/20">
+                    <div key={l} className="space-y-2 ps-3 border-s-2 border-primary/20">
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary">
                         {l}
                       </span>
@@ -522,11 +521,13 @@ export function ItemsView() {
                           name={`tr_name_${l}`}
                           defaultValue={editing?.translations?.find((tr) => tr.locale === l)?.name ?? ''}
                           placeholder={`${t('name')} (${l})`}
+                          dir="auto"
                         />
                         <Input
                           name={`tr_description_${l}`}
                           defaultValue={editing?.translations?.find((tr) => tr.locale === l)?.description ?? ''}
                           placeholder={`${t('description')} (${l})`}
+                          dir="auto"
                         />
                       </div>
                     </div>
