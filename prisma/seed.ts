@@ -438,49 +438,99 @@ async function seedDemoDataset() {
   console.log(`Seeded 1 tenant, ${categoriesData.length} categories, ${totalItems} items, ${totalVariants} variants`);
 }
 
-async function ensureSuperAdmin() {
+async function ensureUser({
+  email,
+  name,
+  role,
+  tenantId,
+  password,
+}: {
+  email: string;
+  name: string;
+  role: string;
+  tenantId: string | null;
+  password: string;
+}) {
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    console.log(`User ${email} already exists — skipping`);
+    return existing;
+  }
+  const hashedPassword = await hashPassword(password);
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      emailVerified: true,
+      role,
+      tenantId,
+    },
+  });
+  await prisma.account.create({
+    data: {
+      userId: user.id,
+      accountId: user.id,
+      providerId: 'credential',
+      password: hashedPassword,
+    },
+  });
+  console.log(`Created ${role}: ${email}`);
+  return user;
+}
+
+async function ensureSuperAdmin(password: string) {
   console.log('Ensuring super admin...');
   const superEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@valleystar.com';
-  const superPassword = process.env.SUPER_ADMIN_PASSWORD || 'admin123456';
-  const existing = await prisma.user.findUnique({ where: { email: superEmail } });
-  if (!existing) {
-    const hashedPassword = await hashPassword(superPassword);
-    const user = await prisma.user.create({
-      data: {
-        name: 'Super Admin',
-        email: superEmail,
-        emailVerified: true,
-        role: 'SUPER_ADMIN',
-      },
+  await ensureUser({
+    email: superEmail,
+    name: 'Super Admin',
+    role: 'SUPER_ADMIN',
+    tenantId: null,
+    password,
+  });
+}
+
+async function ensureTenantAdmins(password: string) {
+  console.log('Ensuring tenant admins...');
+  const tenants = await prisma.tenant.findMany();
+  for (const tenant of tenants) {
+    if (!tenant.slug) {
+      console.warn(`Tenant "${tenant.name}" has no slug — skipping tenant admin`);
+      continue;
+    }
+    await ensureUser({
+      email: `admin@${tenant.slug}.com`,
+      name: `${tenant.name} Admin`,
+      role: 'TENANT_ADMIN',
+      tenantId: tenant.id,
+      password,
     });
-    await prisma.account.create({
-      data: {
-        userId: user.id,
-        accountId: user.id,
-        providerId: 'credential',
-        password: hashedPassword,
-      },
-    });
-    console.log(`Created super admin: ${superEmail}`);
-  } else {
-    console.log('Super admin already exists — skipping');
   }
+}
+
+async function ensureAdmins() {
+  const password = process.env.SUPER_ADMIN_PASSWORD || 'admin123456';
+  await ensureSuperAdmin(password);
+  await ensureTenantAdmins(password);
 }
 
 async function main() {
   const withDemo = process.argv.includes('--demo');
   if (!withDemo) {
     console.log('Seed: admin-only mode (pass --demo for the valley-star dataset)');
-    await ensureSuperAdmin();
+    await ensureAdmins();
     return;
   }
   if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== '1') {
     throw new Error('Refusing --demo seed in production without ALLOW_DEMO_SEED=1');
   }
   await seedDemoDataset();
-  await ensureSuperAdmin();
+  await ensureAdmins();
 }
 
 main()
-  .catch(console.error)
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
   .finally(() => prisma.$disconnect());

@@ -16,5 +16,8 @@ until ./node_modules/.bin/prisma migrate deploy; do
   sleep 5
 done
 
+echo ">> ensuring admin users (safe, idempotent — never --demo)"
+./node_modules/.bin/tsx prisma/seed.ts || echo "!! admin seed failed, continuing boot"
+
 echo ">> starting next.js server"
 exec ./node_modules/.bin/next start -p "${PORT:-3001}"
