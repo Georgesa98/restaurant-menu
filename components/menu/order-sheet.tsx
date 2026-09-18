@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Minus, Plus, X } from 'lucide-react';
 import type { TenantData } from '@/lib/types';
-import type { OrderedEntry } from './order-menu';
+import type { OrderedEntry } from './menu-helpers';
 
 function formatPrice(price: number, locale: string): string {
   const n = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {

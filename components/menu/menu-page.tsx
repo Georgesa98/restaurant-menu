@@ -1,14 +1,20 @@
 import type { TenantData } from '@/lib/types';
-import { OrderMenu } from './order-menu';
+import { MenuHome } from './menu-home';
+import { CategoryDetail } from './category-detail';
 
 export function MenuPage({
   tenant,
   locale,
-  highlightCategory: _highlightCategory,
+  highlightCategory,
 }: {
   tenant: TenantData;
   locale: string;
   highlightCategory?: string;
 }) {
-  return <OrderMenu tenant={tenant} locale={locale} />;
+  if (highlightCategory) {
+    return (
+      <CategoryDetail tenant={tenant} locale={locale} categorySlug={highlightCategory} />
+    );
+  }
+  return <MenuHome tenant={tenant} locale={locale} />;
 }
