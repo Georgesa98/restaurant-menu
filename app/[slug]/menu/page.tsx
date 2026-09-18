@@ -10,7 +10,7 @@ export default async function MenuRoute({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const locale = await getLocale();
 
-  const data = await getTenantWithMenu(slug, locale);
+  const data = await getTenantWithMenu(slug);
 
   if (!data) notFound();
 

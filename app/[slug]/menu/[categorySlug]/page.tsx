@@ -14,7 +14,7 @@ export default async function CategoryMenuRoute({
   const { slug, categorySlug } = await params;
   const locale = await getLocale();
 
-  const data = await getTenantWithCategory(slug, categorySlug, locale);
+  const data = await getTenantWithCategory(slug, categorySlug);
 
   if (!data || data.categories.length === 0) notFound();
 

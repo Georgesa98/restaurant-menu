@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import type { TenantData, WithTranslations } from '@/lib/types';
+import { searchRank, isLiveFeatured } from '@/lib/search';
 import { LanguageSwitcher } from './language-switcher';
 import { OrderSheet } from './order-sheet';
 import {
@@ -23,11 +24,14 @@ import {
   Plus,
 } from 'lucide-react';
 
-function t(item: WithTranslations<{ name: string; description: string | null }>): {
+function t(
+  item: WithTranslations<{ name: string; description: string | null }>,
+  locale: string,
+): {
   name: string;
   description: string | null;
 } {
-  const tr = item.translations?.[0];
+  const tr = item.translations?.find((x) => x.locale === locale) ?? item.translations?.[0];
   return {
     name: tr?.name ?? item.name,
     description: tr?.description ?? item.description,
@@ -156,6 +160,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     return map;
   });
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
+  const [query, setQuery] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const isRtl = locale === 'ar';
@@ -208,6 +213,61 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
     [categories, selectedCategory]
   );
 
+  // Owner-pinned dishes with a live window (null = pinned until unpinned).
+  const featuredItems = useMemo(() => {
+    const out: { item: TenantData['categories'][number]['items'][number]; categorySlug: string }[] = [];
+    for (const c of categories) {
+      for (const item of c.items) {
+        if (!item.isAvailable || !isLiveFeatured(item)) continue;
+        out.push({ item, categorySlug: c.slug });
+      }
+    }
+    return out.sort((a, b) => a.item.displayOrder - b.item.displayOrder);
+  }, [categories]);
+
+  // Featured shelf: a synthetic first section on the All tab when browsing
+  // (hidden while searching — matches already surface there).
+  const sections = useMemo(() => {
+    if (query.trim() || selectedCategory !== 'all' || featuredItems.length === 0) {
+      return visibleCategories;
+    }
+    return [
+      {
+        id: '__featured',
+        name: '',
+        slug: 'featured',
+        description: null,
+        displayOrder: -1,
+        isActive: true,
+        translations: [],
+        items: featuredItems.map((f) => f.item),
+      },
+      ...visibleCategories,
+    ];
+  }, [query, selectedCategory, featuredItems, visibleCategories]);
+
+  const matchCount = useMemo(() => {
+    const q = query.trim();
+    if (!q) return -1;
+    let n = 0;
+    for (const c of visibleCategories) {
+      for (const item of c.items) {
+        if (!item.isAvailable) continue;
+        const itemTrans = t(item, locale);
+        if (
+          searchRank(
+            q,
+            [item.name, itemTrans.name],
+            [item.description, itemTrans.description],
+          ) !== null
+        ) {
+          n++;
+        }
+      }
+    }
+    return n;
+  }, [query, visibleCategories, locale]);
+
   const setQuantity = useCallback((key: string, delta: number) => {
     setQuantities((prev) => {
       const next = new Map(prev);
@@ -249,8 +309,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
       for (const cat of categories) {
         const item = cat.items.find((i) => i.id === itemId);
         if (item) {
-          const catTrans = t(cat);
-          const itemTrans = t(item);
+          const catTrans = t(cat, locale);
+          const itemTrans = t(item, locale);
           let price = 0;
           let label = itemTrans.name;
           if (variantId) {
@@ -269,7 +329,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
       }
     }
     return result;
-  }, [quantities, categories]);
+  }, [quantities, categories, locale, isRtl]);
 
   return (
     <>
@@ -731,6 +791,32 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           )}
         </header>
 
+        {/* Search */}
+        <div className="mx-auto px-4 pt-4" style={{ maxWidth: '900px' }}>
+          <div className="relative">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tm('searchDishes')}
+              aria-label={tm('searchDishes')}
+              className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+              style={{ border: '0.5px solid #E4DDCF', background: '#fff' }}
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label={tm('clear')}
+                className="absolute top-1/2 -translate-y-1/2 text-lg leading-none"
+                style={{ [isRtl ? 'left' : 'right']: '12px', color: 'var(--text-muted)' }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Category nav */}
         <nav className="menu-category-nav nav-scroll-hint">
           <div className="mx-auto px-4 overflow-x-auto whitespace-nowrap" style={{ maxWidth: '900px' }}>
@@ -743,7 +829,7 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                 {tm('all')}
               </button>
               {categories.map((category) => {
-                const catTrans = t(category);
+                const catTrans = t(category, locale);
                 const isActive = selectedCategory === category.slug;
                 return (
                   <button
@@ -766,11 +852,29 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
           style={{ maxWidth: '900px' }}
         >
           <div className="menu-categories-container space-y-12">
-            {visibleCategories.map((category) => {
-              const catTrans = t(category);
-              const items = category.items
+            {sections.map((category) => {
+              const catTrans = t(category, locale);
+              const q = query.trim();
+              const ranked = category.items
                 .filter((i) => i.isAvailable)
-                .sort((a, b) => a.displayOrder - b.displayOrder);
+                .map((item) => {
+                  const itemTrans = t(item, locale);
+                  return {
+                    item,
+                    itemTrans,
+                    rank: q
+                      ? searchRank(
+                          q,
+                          [item.name, itemTrans.name],
+                          [item.description, itemTrans.description],
+                        )
+                      : 1,
+                  };
+                })
+                .filter((r): r is typeof r & { rank: number } => r.rank !== null)
+                .sort((a, b) => a.rank - b.rank || a.item.displayOrder - b.item.displayOrder);
+              if (q && ranked.length === 0) return null;
+              const items = ranked.map((r) => r.item);
               const Icon = categoryIcon(category.slug);
 
               return (
@@ -780,7 +884,9 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                   className="menu-category"
                 >
                   <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
-                    <h2 className="menu-section-header">{catTrans.name}</h2>
+                    <h2 className="menu-section-header">
+                      {category.id === '__featured' ? `⭐ ${tm('featuredTitle')}` : catTrans.name}
+                    </h2>
                   </div>
 
                   <div
@@ -788,7 +894,8 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                     style={{ gap: '14px' }}
                   >
                     {items.map((item) => {
-                      const itemTrans = t(item);
+                      const itemTrans = t(item, locale);
+                      const live = isLiveFeatured(item);
                       const hasVariants = item.variants.length > 0;
                       const selectedVariantId = selectedVariants.get(item.id);
                       const selectedVariant = hasVariants
@@ -829,7 +936,9 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
 
                           <div className="menu-card-body">
                             <div className="flex items-start justify-between gap-2">
-                              <h3 className="menu-item-name truncate">{itemTrans.name}</h3>
+                              <h3 className="menu-item-name truncate" title={live ? tm('featured') : undefined}>
+                                {live ? `★ ${itemTrans.name}` : itemTrans.name}
+                              </h3>
                               <span className="menu-item-price whitespace-nowrap shrink-0">
                                 {hasVariants
                                   ? `from ${formatPrice(fromPrice, locale)}`
@@ -927,6 +1036,11 @@ export function OrderMenu({ tenant, locale }: { tenant: TenantData; locale: stri
                 </section>
               );
             })}
+            {matchCount === 0 && (
+              <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
+                {tm('noResults', { query: query.trim() })}
+              </p>
+            )}
           </div>
 
           {tenant.instagram && (

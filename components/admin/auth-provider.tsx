@@ -32,19 +32,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    api
-      .get('/api/auth/get-session', { withCredentials: true })
-      .then((res) => {
-        if (res.data?.user) {
-          setUser(res.data.user);
-        } else {
+    (async () => {
+      try {
+        const res = await api.get('/api/auth/get-session', { withCredentials: true });
+        if (!res.data?.user) {
           router.replace(`/admin/login`);
+          return;
         }
-      })
-      .catch(() => {
+        // Deactivation is enforced server-side (requireSession reads it from
+        // the DB), so /api/users/me 403s for deactivated accounts.
+        await api.get('/api/users/me', { withCredentials: true });
+        setUser(res.data.user);
+      } catch {
         router.replace(`/admin/login`);
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [router]);
 
   async function signOut() {

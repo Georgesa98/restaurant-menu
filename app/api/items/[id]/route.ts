@@ -44,6 +44,8 @@ export async function PUT(req: Request, { params }: Params) {
       imageUrl: body.imageUrl,
       isAvailable: body.isAvailable,
       displayOrder: body.displayOrder,
+      isFeatured: body.isFeatured ?? undefined,
+      featuredUntil: body.featuredUntil !== undefined ? body.featuredUntil : undefined,
       ...(body.variants?.length
         ? {
             variants: {

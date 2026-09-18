@@ -36,6 +36,8 @@ export async function GET(req: Request) {
         imageUrl: item.imageUrl,
         order: item.displayOrder,
         isAvailable: item.isAvailable,
+        isFeatured: item.isFeatured,
+        featuredUntil: item.featuredUntil ? item.featuredUntil.toISOString() : null,
         variants: item.variants.map((v) => ({
           label: v.label,
           labelEn: v.labelEn,

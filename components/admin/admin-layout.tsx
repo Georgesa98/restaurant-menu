@@ -8,19 +8,24 @@ import type { Locale } from '@/i18n/routing';
 import { useAuth } from './auth-provider';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from './export-button';
-import { ListTree, UtensilsCrossed, Building2, Upload, LogOut, Languages } from 'lucide-react';
+import { ListTree, UtensilsCrossed, Building2, Upload, LogOut, Languages, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-const views = ['items', 'categories'] as const;
-export type AdminView = (typeof views)[number];
+// Tenant admins manage menu content; super-admins manage tenants + users.
+// (Items/categories are tenant-scoped and meaningless without a tenant.)
+const tenantViews = ['items', 'categories'] as const;
+const superViews = ['tenants', 'users'] as const;
+export type AdminView = (typeof tenantViews)[number];
+export type SuperView = (typeof superViews)[number];
 
-export type ExtendedView = AdminView | 'tenants' | 'import';
+export type ExtendedView = AdminView | SuperView | 'import';
 
 const viewIcons: Record<string, ReactNode> = {
   items: <UtensilsCrossed className="size-[18px]" strokeWidth={1.9} />,
   categories: <ListTree className="size-[18px]" strokeWidth={1.9} />,
   tenants: <Building2 className="size-[18px]" strokeWidth={1.9} />,
+  users: <Users className="size-[18px]" strokeWidth={1.9} />,
   import: <Upload className="size-[18px]" strokeWidth={1.9} />,
 };
 
@@ -113,6 +118,7 @@ export function AdminLayout({
   const t = useTranslations('admin');
   const { user, signOut } = useAuth();
   const isSuper = user?.role === 'SUPER_ADMIN';
+  const navViews: readonly string[] = isSuper ? superViews : tenantViews;
 
   return (
     <div className="min-h-dvh bg-muted/40 lg:flex">
@@ -131,18 +137,12 @@ export function AdminLayout({
           </span>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:px-2.5 lg:pb-4">
-          {views.map((v) => (
-            <NavButton key={v} active={view === v} onClick={() => onNavigate(v)}>
+          {navViews.map((v) => (
+            <NavButton key={v} active={view === v} onClick={() => onNavigate(v as ExtendedView)}>
               {viewIcons[v]}
               {t(v)}
             </NavButton>
           ))}
-          {isSuper && (
-            <NavButton active={view === 'tenants'} onClick={() => onNavigate('tenants')}>
-              <Building2 className="size-[18px]" strokeWidth={1.9} />
-              {t('tenants')}
-            </NavButton>
-          )}
           <span className="mx-1 hidden w-px self-stretch bg-border/70 lg:hidden" />
           <span className="lg:hidden">
             <NavButton active={view === 'import'} onClick={() => onNavigate('import')}>

@@ -91,6 +91,8 @@ export async function POST(req: Request) {
               imageUrl: item.imageUrl ?? null,
               displayOrder: item.order ?? 0,
               isAvailable: item.isAvailable ?? true,
+              isFeatured: item.isFeatured ?? false,
+              featuredUntil: item.featuredUntil ?? null,
               categoryId: category.id,
               ...(hasVariants
                 ? {
@@ -117,6 +119,8 @@ export async function POST(req: Request) {
               imageUrl: item.imageUrl ?? null,
               displayOrder: item.order ?? 0,
               isAvailable: item.isAvailable ?? true,
+              isFeatured: item.isFeatured ?? false,
+              featuredUntil: item.featuredUntil ?? null,
               ...(hasVariants
                 ? {
                     variants: {

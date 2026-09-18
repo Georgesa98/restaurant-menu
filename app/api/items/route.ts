@@ -49,6 +49,8 @@ export async function POST(req: Request) {
       imageUrl: body.imageUrl ?? null,
       isAvailable: body.isAvailable ?? true,
       displayOrder: body.displayOrder ?? 0,
+      isFeatured: body.isFeatured ?? false,
+      featuredUntil: body.featuredUntil ?? null,
       ...(body.variants?.length
         ? {
             variants: {

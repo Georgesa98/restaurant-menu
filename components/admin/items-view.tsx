@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, GripVertical, Upload, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, GripVertical, Upload, X, ImageOff, Pin } from 'lucide-react';
+import { PagerControls } from './data-table';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -30,6 +31,8 @@ type Item = {
   imageUrl: string | null;
   isAvailable: boolean;
   displayOrder: number;
+  isFeatured: boolean;
+  featuredUntil: string | null;
   category?: { name: string };
   translations: { locale: string; name: string; description: string | null }[];
   variants: VariantRow[];
@@ -49,6 +52,7 @@ function SortableCard({
   onEdit,
   onRemove,
   onToggleAvailability,
+  onToggleFeatured,
   t,
   locale,
 }: {
@@ -56,6 +60,7 @@ function SortableCard({
   onEdit: (i: Item) => void;
   onRemove: (id: string) => void;
   onToggleAvailability: (i: Item) => void;
+  onToggleFeatured: (i: Item) => void;
   t: (key: string) => string;
   locale: string;
 }) {
@@ -105,11 +110,45 @@ function SortableCard({
         </div>
         <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{item.category?.name}</span>
       </div>
-      <p className="text-sm font-medium truncate mb-1">{item.name}</p>
-      {item.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>}
+      <div className="flex items-center gap-3 mb-3">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt=""
+            loading="lazy"
+            className="size-14 rounded-lg object-cover shrink-0 ring-1 ring-foreground/10"
+          />
+        ) : (
+          <div
+            className="size-14 rounded-lg bg-muted flex items-center justify-center shrink-0 ring-1 ring-amber/40"
+            title={t('noPhoto')}
+          >
+            <ImageOff className="size-5 text-muted-foreground/50" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium truncate mb-1">{item.name}</p>
+          {item.description && <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>}
+          {!item.imageUrl && (
+            <span className="inline-block mt-1 text-[11px] font-medium text-amber bg-amber/10 px-1.5 py-0.5 rounded">
+              {t('noPhoto')}
+            </span>
+          )}
+        </div>
+      </div>
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold tabular-nums">{priceLabel}</span>
         <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => onToggleFeatured(item)}
+            title={item.isFeatured ? t('unpinItem') : t('pinItem')}
+          >
+            <Pin
+              className={`size-3.5 ${item.isFeatured ? 'fill-amber text-amber' : ''}`}
+            />
+          </Button>
           <Button variant="ghost" size="xs" onClick={() => onEdit(item)}>
             <Pencil className="size-3.5" />
           </Button>
@@ -133,7 +172,14 @@ export function ItemsView() {
   const [categoryId, setCategoryId] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [missingOnly, setMissingOnly] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(() => {
+    if (typeof window === 'undefined') return 12;
+    const n = Number(localStorage.getItem('items-page-size'));
+    return [12, 24, 48].includes(n) ? n : 12;
+  });
 
   const [variants, setVariants] = useState<VariantRow[]>([]);
 
@@ -154,17 +200,32 @@ export function ItemsView() {
     load();
   }, []);
 
+  const missingPhotos = items.filter((i) => !i.imageUrl).length;
+
   const filtered = useMemo(() => {
     let result = items;
     if (filterCategory) {
       result = result.filter((item) => item.categoryId === filterCategory);
+    }
+    if (missingOnly) {
+      result = result.filter((item) => !item.imageUrl);
     }
     if (search) {
       const q = search.toLowerCase();
       result = result.filter((item) => item.name.toLowerCase().includes(q));
     }
     return result;
-  }, [items, filterCategory, search]);
+  }, [items, filterCategory, missingOnly, search]);
+
+  // Pagination is view-only: drag-reorder keeps operating on the full
+  // filtered array, so displayOrder stays globally consistent.
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = filtered.slice(safePage * pageSize, safePage * pageSize + pageSize);
+
+  function resetPage() {
+    setPage(0);
+  }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -202,6 +263,8 @@ export function ItemsView() {
       imageUrl: (data.get('imageUrl') as string) || null,
       isAvailable: data.get('isAvailable') === 'on',
       displayOrder: Number(data.get('displayOrder')),
+      isFeatured: data.get('isFeatured') === 'on',
+      featuredUntil: (data.get('featuredUntil') as string) || null,
       variants: variants.filter((v) => v.label.trim()),
     };
 
@@ -241,6 +304,11 @@ export function ItemsView() {
     load();
   }
 
+  async function toggleFeatured(item: Item) {
+    await api.patch(`/api/items/${item.id}/featured`, { isFeatured: !item.isFeatured });
+    load();
+  }
+
   const [preview, setPreview] = useState<string | null>(null);
 
   async function uploadFile(file: File) {
@@ -267,6 +335,8 @@ export function ItemsView() {
       imageUrl: null,
       isAvailable: true,
       displayOrder: 0,
+      isFeatured: false,
+      featuredUntil: null,
       translations: [],
       variants: [],
     };
@@ -299,6 +369,9 @@ export function ItemsView() {
         <div>
           <h1 className="text-xl font-bold">{t('items')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t('itemCount', { count: items.length })}</p>
+          <p className={`text-sm mt-1 font-medium ${missingPhotos > 0 ? 'text-amber' : 'text-muted-foreground'}`}>
+            {t('photoScore', { missing: missingPhotos, total: items.length })}
+          </p>
         </div>
         <Button onClick={() => openEdit()}>
           <Plus className="size-4" />
@@ -310,13 +383,32 @@ export function ItemsView() {
         <Input
           placeholder={t('searchItems')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            resetPage();
+          }}
           className="max-w-64"
         />
+        <button
+          onClick={() => {
+            setMissingOnly((v) => !v);
+            resetPage();
+          }}
+          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
+            missingOnly
+              ? 'bg-amber text-white'
+              : 'bg-muted text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('missingOnly')}
+        </button>
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             <button
-              onClick={() => setFilterCategory(null)}
+              onClick={() => {
+                setFilterCategory(null);
+                resetPage();
+              }}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 filterCategory === null
                   ? 'bg-primary text-primary-foreground'
@@ -328,7 +420,10 @@ export function ItemsView() {
             {categories.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setFilterCategory(c.id)}
+                onClick={() => {
+                  setFilterCategory(c.id);
+                  resetPage();
+                }}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   filterCategory === c.id
                     ? 'bg-primary text-primary-foreground'
@@ -343,15 +438,16 @@ export function ItemsView() {
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={filtered.map((i) => i.id)} strategy={rectSortingStrategy}>
+        <SortableContext items={paged.map((i) => i.id)} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map((item) => (
+            {paged.map((item) => (
               <SortableCard
                 key={item.id}
                 item={item}
                 onEdit={openEdit}
                 onRemove={remove}
                 onToggleAvailability={toggleAvailability}
+                onToggleFeatured={toggleFeatured}
                 t={t}
                 locale={locale}
               />
@@ -359,6 +455,18 @@ export function ItemsView() {
           </div>
         </SortableContext>
       </DndContext>
+      <PagerControls
+        page={safePage}
+        pageCount={pageCount}
+        onPage={setPage}
+        pageSize={pageSize}
+        onPageSize={(n) => {
+          setPageSize(n);
+          localStorage.setItem('items-page-size', String(n));
+          setPage(0);
+        }}
+        pageSizeOptions={[12, 24, 48]}
+      />
 
       <Dialog
         open={open}
@@ -371,15 +479,15 @@ export function ItemsView() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-xl">
           <form onSubmit={save}>
             <DialogHeader>
               <DialogTitle>
                 {editing?.id ? t('edit') : t('create')} {t('items')}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-5 py-4 max-h-[85dvh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>{t('categories')}</Label>
                   <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? '')}>
@@ -507,6 +615,22 @@ export function ItemsView() {
                 <input name="isAvailable" type="checkbox" defaultChecked={editing?.isAvailable} />
                 {t('isAvailable')}
               </label>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input name="isFeatured" type="checkbox" defaultChecked={editing?.isFeatured} />
+                  {t('isFeatured')}
+                </label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {t('featuredUntil')}
+                  <Input
+                    name="featuredUntil"
+                    type="date"
+                    defaultValue={editing?.featuredUntil ? editing.featuredUntil.slice(0, 10) : ''}
+                    className="w-auto"
+                  />
+                </label>
+              </div>
 
               <div className="border-t pt-4">
                 <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">{t('translations')}</p>

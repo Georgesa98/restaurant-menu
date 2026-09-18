@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from './auth-provider';
 import { api } from '@/lib/api';
@@ -8,72 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, useSortable, rectSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { Plus } from 'lucide-react';
+import { DataTable } from './data-table';
+import { getCategoryColumns, type CategoryRow } from './categories-columns';
 
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  displayOrder: number;
+type Category = CategoryRow & {
   isActive: boolean;
   translations: { locale: string; name: string; description: string | null }[];
 };
 
 const LOCALES = ['en', 'ar'];
-
-function SortableCard({
-  cat,
-  onEdit,
-  onRemove,
-}: {
-  cat: Category;
-  onEdit: (c: Category) => void;
-  onRemove: (id: string) => void;
-}) {
-  const t = useTranslations('admin');
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="relative bg-card rounded-xl ring-1 ring-foreground/5 py-4 px-4 hover:ring-foreground/10 transition-shadow group"
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing touch-none"
-          aria-label="Drag to reorder"
-        >
-          <GripVertical className="size-3.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" />
-        </button>
-        <span className="size-2 rounded-full bg-primary/60 shrink-0" />
-        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">/{cat.slug}</span>
-      </div>
-      <p className="text-sm font-medium mb-1">{cat.name}</p>
-      {cat.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{cat.description}</p>}
-      <div className="flex items-center gap-1 mt-auto pt-1">
-        <Button variant="ghost" size="xs" onClick={() => onEdit(cat)}>
-          <Pencil className="size-3.5" />
-        </Button>
-        <Button variant="ghost" size="xs" onClick={() => onRemove(cat.id)}>
-          <Trash2 className="size-3.5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export function CategoriesView() {
   const t = useTranslations('admin');
@@ -81,38 +25,24 @@ export function CategoriesView() {
   const [cats, setCats] = useState<Category[]>([]);
   const [editing, setEditing] = useState<Category | null>(null);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const tenantId = user?.role === 'SUPER_ADMIN' ? '' : user?.tenantId;
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-
   async function load() {
-    const res = await api.get('/api/categories', { params: { tenantId } });
-    setCats(res.data);
+    setLoading(true);
+    try {
+      const res = await api.get('/api/categories', { params: { tenantId } });
+      setCats(res.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = cats.findIndex((c) => c.id === active.id);
-    const newIndex = cats.findIndex((c) => c.id === over.id);
-
-    const reordered = [...cats];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
-
-    const updated = reordered.map((c, i) => ({ ...c, displayOrder: i }));
-    setCats(updated);
-
-    await api.patch('/api/categories/reorder', {
-      items: updated.map((c) => ({ id: c.id, displayOrder: c.displayOrder })),
-    });
-  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -174,12 +104,22 @@ export function CategoriesView() {
     setOpen(true);
   }
 
+  const columns = useMemo(
+    () =>
+      getCategoryColumns(t, {
+        onEdit: (row) => openEdit(cats.find((c) => c.id === row.id)),
+        onRemove: remove,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cats, t],
+  );
+
   return (
     <div className="max-w-5xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold">{t('categories')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{cats.length} total</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('categoryCount', { count: cats.length })}</p>
         </div>
         <Button onClick={() => openEdit()}>
           <Plus className="size-4" />
@@ -187,38 +127,36 @@ export function CategoriesView() {
         </Button>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={cats.map((c) => c.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {cats.map((cat) => (
-              <SortableCard key={cat.id} cat={cat} onEdit={openEdit} onRemove={remove} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <DataTable
+        columns={columns}
+        data={cats}
+        searchKey="name"
+        searchPlaceholder={t('searchCategories')}
+        isLoading={loading}
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
           <form onSubmit={save}>
             <DialogHeader>
               <DialogTitle>
                 {editing?.id ? t('edit') : t('create')} {t('categories')}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-5 py-4 max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-5 py-4 max-h-[85dvh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>{t('name')}</Label>
-                  <Input name="name" defaultValue={editing?.name} required />
+                  <Input name="name" defaultValue={editing?.name} required dir="auto" />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('slug')}</Label>
-                  <Input name="slug" defaultValue={editing?.slug} required />
+                  <Input name="slug" defaultValue={editing?.slug} required dir="ltr" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>{t('description')}</Label>
-                <Input name="description" defaultValue={editing?.description ?? ''} />
+                <Input name="description" defaultValue={editing?.description ?? ''} dir="auto" />
               </div>
               <div className="space-y-2">
                 <Label>{t('displayOrder')}</Label>
@@ -230,10 +168,10 @@ export function CategoriesView() {
               </label>
 
               <div className="border-t pt-4">
-                <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">TRANSLATIONS</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide">{t('translations')}</p>
                 <div className="space-y-4">
                   {LOCALES.map((l) => (
-                    <div key={l} className="space-y-2 pl-3 border-l-2 border-primary/20">
+                    <div key={l} className="space-y-2 ps-3 border-s-2 border-primary/20">
                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary">
                         {l}
                       </span>
@@ -242,11 +180,13 @@ export function CategoriesView() {
                           name={`tr_name_${l}`}
                           defaultValue={editing?.translations?.find((tr) => tr.locale === l)?.name ?? ''}
                           placeholder={`${t('name')} (${l})`}
+                          dir="auto"
                         />
                         <Input
                           name={`tr_description_${l}`}
                           defaultValue={editing?.translations?.find((tr) => tr.locale === l)?.description ?? ''}
                           placeholder={`${t('description')} (${l})`}
+                          dir="auto"
                         />
                       </div>
                     </div>

@@ -463,12 +463,15 @@ async function ensureUser({
     // Seed is the sole writer of usernames (no UI edits them), so align
     // any drift — e.g. usernames created under the old dashed scheme that
     // better-auth's validator rejects (only alphanumerics, _ and . allowed).
-    if (existing.username !== username || !existing.displayUsername) {
+    // Tenant links drift too: --demo wipes tenants (new ids) while users
+    // persist, orphaning tenantId. Reconcile both.
+    const tid = role === 'SUPER_ADMIN' ? null : tenantId;
+    if (existing.username !== username || !existing.displayUsername || existing.tenantId !== tid) {
       await prisma.user.update({
         where: { id: existing.id },
-        data: { username, displayUsername: username },
+        data: { username, displayUsername: username, tenantId: tid },
       });
-      console.log(`Updated ${role} username: ${email} → ${username}`);
+      console.log(`Updated ${role} link: ${email} → ${username} (tenant: ${tid ?? 'none'})`);
     }
     const cred = existing.accounts[0];
     const matches = cred?.password

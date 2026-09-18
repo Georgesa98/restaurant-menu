@@ -1,4 +1,4 @@
-export type Translation = { name: string; description: string | null };
+export type Translation = { locale: string; name: string; description: string | null };
 
 export type WithTranslations<T> = T & { translations: Translation[] };
 
@@ -43,6 +43,8 @@ export type TenantData = {
       imageUrl: string | null;
       isAvailable: boolean;
       displayOrder: number;
+      isFeatured: boolean;
+      featuredUntil: string | null;
       variants: {
         id: string;
         label: string;

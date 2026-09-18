@@ -1,17 +1,19 @@
 import { prisma } from './prisma';
 import type { TenantData, TenantCard } from './types';
 
-function menuInclude(locale: string) {
+function menuInclude() {
   return {
     categories: {
       include: {
           items: {
             include: {
-              translations: { where: { locale } },
+              // All locales: the menu resolves the current one client-side
+              // and searches across both (see lib/search.ts).
+              translations: { orderBy: { locale: 'asc' } },
               variants: { orderBy: { sortOrder: 'asc' } },
             },
           },
-        translations: { where: { locale } },
+        translations: { orderBy: { locale: 'asc' } },
       },
     },
   } as const;
@@ -33,10 +35,10 @@ export async function getActiveTenants(): Promise<TenantCard[]> {
   return rows as TenantCard[];
 }
 
-export async function getTenantWithMenu(slug: string, locale: string): Promise<TenantData | null> {
+export async function getTenantWithMenu(slug: string): Promise<TenantData | null> {
   const data = await prisma.tenant.findUnique({
     where: { slug },
-    include: menuInclude(locale),
+    include: menuInclude(),
   });
   return data as TenantData | null;
 }
@@ -44,7 +46,6 @@ export async function getTenantWithMenu(slug: string, locale: string): Promise<T
 export async function getTenantWithCategory(
   slug: string,
   categorySlug: string,
-  locale: string,
 ): Promise<TenantData | null> {
   const data = await prisma.tenant.findUnique({
     where: { slug },
@@ -54,11 +55,11 @@ export async function getTenantWithCategory(
         include: {
         items: {
           include: {
-            translations: { where: { locale } },
+            translations: { orderBy: { locale: 'asc' } },
             variants: { orderBy: { sortOrder: 'asc' } },
           },
         },
-          translations: { where: { locale } },
+          translations: { orderBy: { locale: 'asc' } },
         },
       },
     },

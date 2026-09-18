@@ -21,6 +21,7 @@ model User {
   displayUsername  String?
   tenantId         String?
   role             String       @default("TENANT_ADMIN")
+  isActive         Boolean      @default(true)
 
   sessions    Session[]
   accounts    Account[]
@@ -179,6 +180,8 @@ model MenuItem {
   imageUrl    String?                             // single photo for the whole card
   isAvailable Boolean  @default(true)
   displayOrder Int     @default(0)
+  isFeatured  Boolean  @default(false) // owner pin: sorts first, auto-expires via featuredUntil
+  featuredUntil DateTime?
   isDeleted   Boolean  @default(false) // soft delete: tombstone for delta sync
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
