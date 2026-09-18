@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 type CategoryUpsert = {
   id: string;
@@ -237,6 +238,16 @@ export async function POST(req: Request) {
         prisma.menuItem.update({ where: { id: v.menuItem.id }, data: { updatedAt: now } }),
       ]);
     }
+  }
+
+  if (
+    acceptedCategoryIds.length > 0 ||
+    acceptedItemIds.length > 0 ||
+    (body.deletes?.categoryIds?.length ?? 0) > 0 ||
+    (body.deletes?.itemIds?.length ?? 0) > 0 ||
+    (body.deletes?.variantIds?.length ?? 0) > 0
+  ) {
+    await bumpTenantRevision(tenantId);
   }
 
   return Response.json({

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 export async function PATCH(req: Request) {
   const r = await requireSession();
@@ -16,6 +17,14 @@ export async function PATCH(req: Request) {
       }),
     ),
   );
+
+  if (items.length > 0) {
+    const first = await prisma.category.findUnique({
+      where: { id: items[0].id },
+      select: { tenantId: true },
+    });
+    if (first) await bumpTenantRevision(first.tenantId);
+  }
 
   return Response.json({ success: true });
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export type TenantRow = {
@@ -11,6 +11,8 @@ export type TenantRow = {
   domain: string | null;
   plan: string;
   isActive: boolean;
+  revision: number;
+  syncRequired: boolean;
   _count: { categories: number; items: number };
 };
 
@@ -20,7 +22,11 @@ export type TFn = (key: string, values?: Record<string, string | number>) => str
 
 export function getTenantColumns(
   t: TFn,
-  actions: { onEdit: (row: TenantRow) => void; onRemove: (id: string) => void },
+  actions: {
+    onEdit: (row: TenantRow) => void;
+    onRemove: (id: string) => void;
+    onRequestSync: (row: TenantRow) => void;
+  },
 ): ColumnDef<TenantRow>[] {
   return [
     {
@@ -58,12 +64,34 @@ export function getTenantColumns(
       ),
     },
     {
+      id: 'sync',
+      header: t('sync'),
+      cell: ({ row }) => (
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
+          <span
+            className={`size-2 rounded-full shrink-0 ${row.original.syncRequired ? 'bg-amber' : 'bg-green-500'}`}
+            title={row.original.syncRequired ? t('syncRequired') : t('inSync')}
+          />
+          rev {row.original.revision}
+        </span>
+      ),
+    },
+    {
       id: 'actions',
       header: () => <span className="sr-only">{t('actions')}</span>,
       enableSorting: false,
       meta: { className: stickyEnd },
       cell: ({ row }) => (
         <span className="flex justify-end gap-1 whitespace-nowrap">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => actions.onRequestSync(row.original)}
+            aria-label={t('requestSync')}
+            title={t('requestSync')}
+          >
+            <RefreshCw className="size-3.5" />
+          </Button>
           <Button variant="ghost" size="xs" onClick={() => actions.onEdit(row.original)} aria-label={t('edit')}>
             <Pencil className="size-3.5" />
           </Button>

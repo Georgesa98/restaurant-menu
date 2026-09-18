@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 const forbid = () => Response.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -64,6 +65,8 @@ export async function PUT(req: Request, { params }: Params) {
       website: body.website,
     },
   });
+
+  await bumpTenantRevision(id);
 
   return Response.json(tenant);
 }

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 type Params = { params: Promise<{ id: string; locale: string }> };
 
@@ -21,6 +22,9 @@ export async function PUT(req: Request, { params }: Params) {
     prisma.menuItem.update({ where: { id }, data: { updatedAt: new Date() } }),
   ]);
 
+  const parent = await prisma.menuItem.findUnique({ where: { id }, select: { tenantId: true } });
+  if (parent) await bumpTenantRevision(parent.tenantId);
+
   return Response.json(result);
 }
 
@@ -29,11 +33,13 @@ export async function DELETE(_req: Request, { params }: Params) {
   if ('response' in r) return r.response;
 
   const { id, locale } = await params;
+  const parent = await prisma.menuItem.findUnique({ where: { id }, select: { tenantId: true } });
   await prisma.$transaction([
     prisma.menuItemTranslation.delete({
       where: { menuItemId_locale: { menuItemId: id, locale } },
     }),
     prisma.menuItem.update({ where: { id }, data: { updatedAt: new Date() } }),
   ]);
+  if (parent) await bumpTenantRevision(parent.tenantId);
   return Response.json({ success: true });
 }

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -14,6 +15,8 @@ export async function PATCH(req: Request, { params }: Params) {
     where: { id },
     data: { isAvailable: body.isAvailable },
   });
+
+  await bumpTenantRevision(menuItem.tenantId);
 
   return Response.json(menuItem);
 }

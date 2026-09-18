@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -34,6 +35,8 @@ export async function PUT(req: Request, { params }: Params) {
     },
   });
 
+  await bumpTenantRevision(cat.tenantId);
+
   return Response.json(cat);
 }
 
@@ -45,6 +48,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   const now = new Date();
   // Soft delete: flag + tombstone, cascade the flag to items so delta sync
   // removes them on tablets. Hard purge is super-admin only.
+  const cat = await prisma.category.findUnique({ where: { id }, select: { tenantId: true } });
   await prisma.$transaction([
     prisma.category.update({ where: { id }, data: { isDeleted: true, updatedAt: now } }),
     prisma.menuItem.updateMany({
@@ -52,5 +56,6 @@ export async function DELETE(_req: Request, { params }: Params) {
       data: { isDeleted: true, updatedAt: now },
     }),
   ]);
+  if (cat) await bumpTenantRevision(cat.tenantId);
   return Response.json({ success: true });
 }

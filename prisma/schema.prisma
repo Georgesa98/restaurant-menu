@@ -144,8 +144,13 @@ model Tenant {
   defaultLocale    String   @default("en")
   availableLocales String[] @default(["en"])
 
+  // Sync coordination (tablet fleet): monotonic menu revision + poll-flag push.
+  revision     Int     @default(0)
+  syncRequired Boolean @default(false)
+
   categories Category[]
   items      MenuItem[]
+  heartbeats DeviceHeartbeat[]
 
   @@map("tenants")
 }
@@ -234,4 +239,19 @@ model MenuItemTranslation {
 
   @@unique([menuItemId, locale])
   @@map("menu_item_translations")
+}
+
+model DeviceHeartbeat {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  deviceId   String
+  lastSeen   DateTime @default(now())
+  appVersion String?
+  locale     String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, deviceId])
+  @@index([tenantId, lastSeen])
+  @@map("device_heartbeats")
 }

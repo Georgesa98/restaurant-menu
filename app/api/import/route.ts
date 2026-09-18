@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 const EN_CATEGORY_NAMES: Record<string, string> = {
   'مشروبات ساخنة': 'Hot Drinks',
@@ -161,6 +162,8 @@ export async function POST(req: Request) {
       errors.push(`Category "${cat.name}": ${msg}`);
     }
   }
+
+  await bumpTenantRevision(effectiveTenantId);
 
   return Response.json({
     imported: { categories: catCount, items: itemCount, translations: trCount },

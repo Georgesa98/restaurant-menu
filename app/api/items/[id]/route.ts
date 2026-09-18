@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -61,6 +62,8 @@ export async function PUT(req: Request, { params }: Params) {
     },
   });
 
+  await bumpTenantRevision(menuItem.tenantId);
+
   return Response.json(menuItem);
 }
 
@@ -70,9 +73,10 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   const { id } = await params;
   // Soft delete: tombstone for delta sync.
-  await prisma.menuItem.update({
+  const menuItem = await prisma.menuItem.update({
     where: { id },
     data: { isDeleted: true, updatedAt: new Date() },
   });
+  await bumpTenantRevision(menuItem.tenantId);
   return Response.json({ success: true });
 }

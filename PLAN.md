@@ -667,3 +667,47 @@ For the static site, images are served from the API server's URL (or CDN). In th
 - [x] Import/export works via JSON file (sidebar Import view, Export button)
 - [x] Admin CRUD includes `financialPrice` field
 - [ ] Mobile responsive, Lighthouse ≥ 95
+
+---
+
+## Phase 8: Tablet fleet coordination (heartbeat + revision) ✓ _(done 2026-09-18)_
+
+Poll-flag "push" — no FCM in v1. Every menu write bumps `Tenant.revision` and
+raises `syncRequired`; tablets compare cheaply; super-admin sees the fleet.
+
+- **Schema** (migration `20260918103849_heartbeat_revision`):
+  `Tenant.revision Int @default(0)`, `Tenant.syncRequired Boolean @default(false)`,
+  `DeviceHeartbeat(tenantId, deviceId, lastSeen, appVersion?, locale?)`
+  with `@@unique([tenantId, deviceId])`.
+- **`lib/revision.ts`** — `bumpTenantRevision(tenantId)` (best-effort, never
+  fails the write). Called by: items POST/PUT/DELETE + availability/featured/
+  reorder, categories POST/PUT/DELETE + reorder, both translation upserts/
+  deletes, import, tablet push (when anything accepted), tenant settings update.
+- **`POST /api/devices/heartbeat/`** (public, kiosk) — body
+  `{ slug|tenantId, deviceId, appVersion?, locale?, knownRevision? }` → upserts
+  the device row, returns `{ serverTime, revision, syncRequired }`. When
+  `knownRevision >= revision` the poll flag auto-clears (fleet caught up).
+  NOTE: trailing slash required — server `trailingSlash: true` 308s slashless
+  POSTs and tablet HTTP stacks don't follow them (same as login).
+- **`GET /api/tenants/:id/devices`** (super-admin or own tenant admin) —
+  fleet ordered by `lastSeen desc`.
+- **`POST|DELETE /api/tenants/:id/request-sync`** (super-admin) — raise/clear
+  the poll flag. This is the entire v1 "push": tablets pick it up on the next
+  15-min poll / heartbeat / manual Sync.
+- **Pull** ships the full tenant row, so `revision`/`syncRequired` ride along
+  with no extra endpoint. Push responses are unchanged.
+- **Super-admin UI** (`tenants-columns`/`tenants-view`): `rev N` + green/amber
+  dot per tenant, request-sync button, fleet panel (device id, relative
+  last-seen, app version; stale >30 min greyed). i18n keys in `en`/`ar`.
+- **Related (already shipped, verified 2026-09-18):** photo score stat +
+  thumbnails + `missingOnly` filter in `items-view`; featured pins
+  (`isFeatured`/`featuredUntil`, migration `20260914195512_featured_slots`,
+  `PATCH /api/items/:id/featured`); bilingual search (`lib/search.ts`).
+
+### Verified
+
+- `pnpm build` green (all new routes type-check).
+- Heartbeat round-trip live-tested: `POST /api/devices/heartbeat/` →
+  `{revision, syncRequired}`; pull tenant carries both fields.
+- `bumpTenantRevision` + heartbeat upsert + devices query verified against
+  local DB (smoke rows cleaned up).

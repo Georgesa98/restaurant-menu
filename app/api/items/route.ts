@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { bumpTenantRevision } from '@/lib/revision';
 
 export async function GET(req: Request) {
   const r = await requireSession();
@@ -65,6 +66,8 @@ export async function POST(req: Request) {
         : {}),
     },
   });
+
+  await bumpTenantRevision(tenantId);
 
   return Response.json(menuItem, { status: 201 });
 }
