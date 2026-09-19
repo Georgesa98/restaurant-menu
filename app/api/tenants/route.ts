@@ -51,7 +51,6 @@ export async function POST(req: Request) {
       cardStyle: body.cardStyle ?? 'elevated',
       menuLayout: body.menuLayout ?? 'single',
       spacing: body.spacing ?? 'comfortable',
-      customCss: body.customCss ?? null,
       logoUrl: body.logoUrl ?? null,
       coverUrl: body.coverUrl ?? null,
       description: body.description ?? null,

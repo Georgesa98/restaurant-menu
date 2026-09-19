@@ -22,7 +22,6 @@ export type TenantData = {
   cardStyle: string;
   menuLayout: string;
   spacing: string;
-  customCss: string | null;
   logoUrl: string | null;
   description: string | null;
   address: string | null;

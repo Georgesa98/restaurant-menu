@@ -10,6 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus } from 'lucide-react';
 import { DataTable } from './data-table';
 import { getTenantColumns, type TenantRow } from './tenants-columns';
+import {
+  THEME_PRESETS,
+  DEFAULT_TOKENS,
+  HEADING_FONT_OPTIONS,
+  BODY_FONT_OPTIONS,
+  RADIUS_OPTIONS,
+  SHADOW_ON,
+  SHADOW_OFF,
+  type ThemeTokens,
+} from '@/lib/tenant-presets';
 
 type Tenant = TenantRow & {
   domain: string | null;
@@ -20,12 +30,49 @@ type Tenant = TenantRow & {
   description: string | null;
   address: string | null;
   phone: string | null;
-  customCss: string | null;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
+  backgroundColor: string;
+  surfaceColor: string;
+  textColor: string;
+  textMuted: string;
+  headingFont: string;
+  bodyFont: string;
+  borderRadiusSm: string;
+  borderRadiusMd: string;
+  borderRadiusLg: string;
+  shadow: string;
   createdAt: string;
 };
+
+function tokensFromTenant(t?: Partial<Tenant>): ThemeTokens {
+  return {
+    primaryColor: t?.primaryColor ?? DEFAULT_TOKENS.primaryColor,
+    secondaryColor: t?.secondaryColor ?? DEFAULT_TOKENS.secondaryColor,
+    accentColor: t?.accentColor ?? DEFAULT_TOKENS.accentColor,
+    backgroundColor: t?.backgroundColor ?? DEFAULT_TOKENS.backgroundColor,
+    surfaceColor: t?.surfaceColor ?? DEFAULT_TOKENS.surfaceColor,
+    textColor: t?.textColor ?? DEFAULT_TOKENS.textColor,
+    textMuted: t?.textMuted ?? DEFAULT_TOKENS.textMuted,
+    headingFont: t?.headingFont ?? DEFAULT_TOKENS.headingFont,
+    bodyFont: t?.bodyFont ?? DEFAULT_TOKENS.bodyFont,
+    borderRadiusSm: t?.borderRadiusSm ?? DEFAULT_TOKENS.borderRadiusSm,
+    borderRadiusMd: t?.borderRadiusMd ?? DEFAULT_TOKENS.borderRadiusMd,
+    borderRadiusLg: t?.borderRadiusLg ?? DEFAULT_TOKENS.borderRadiusLg,
+    shadow: t?.shadow ?? DEFAULT_TOKENS.shadow,
+  };
+}
+
+const COLOR_FIELDS = [
+  'primaryColor',
+  'secondaryColor',
+  'accentColor',
+  'backgroundColor',
+  'surfaceColor',
+  'textColor',
+  'textMuted',
+] as const;
 
 type Device = {
   id: string;
@@ -54,6 +101,7 @@ export function TenantsView() {
   const [fleetTenant, setFleetTenant] = useState('');
   const [fleetLoading, setFleetLoading] = useState(false);
   const [fleetNow, setFleetNow] = useState(() => Date.now());
+  const [tokens, setTokens] = useState<ThemeTokens>(DEFAULT_TOKENS);
 
   async function load() {
     setLoading(true);
@@ -102,7 +150,7 @@ export function TenantsView() {
       description: (data.get('description') as string) || null,
       address: (data.get('address') as string) || null,
       phone: (data.get('phone') as string) || null,
-      customCss: (data.get('customCss') as string) || null,
+      ...tokens,
     };
 
     if (editing.id) {
@@ -127,42 +175,6 @@ export function TenantsView() {
     load();
   }
 
-  function generateStarterCss(colors: { primary: string; secondary: string; accent: string }) {
-    return `/* MenuHost — custom theme CSS */
-/* Classes: .menu-page, .menu-header, .menu-title, .menu-tagline, .menu-meta
-   .menu-category, .menu-category-header, .menu-category-name
-   .menu-items-grid, .menu-item, .menu-card, .menu-item-image
-   .menu-item-content, .menu-item-name, .menu-item-price, .menu-item-description
-   .menu-item-qty, .menu-item-qty-btn
-   .menu-order-bar, .menu-order-bar-inner, .menu-footer
-   Variables: var(--primary), var(--secondary), var(--accent),
-   var(--bg), var(--surface), var(--text), var(--text-muted),
-   var(--font-heading), var(--font-body), var(--radius-md), var(--shadow) */
-
-/* Example: bordered cards with uppercase category names */
-.menu-category-name {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.875rem;
-}
-.menu-item {
-  border: 1px solid color-mix(in srgb, ${colors.secondary} 15%, transparent);
-  border-radius: var(--radius-md);
-}
-.menu-item-image img {
-  transition: transform 0.3s ease;
-}
-.menu-item:hover .menu-item-image img {
-  transform: scale(1.05);
-}
-.menu-item-price {
-  background: ${colors.primary}10;
-  padding: 0.125rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.8125rem;
-}`;
-  }
-
   function openEdit(tenant?: Tenant) {
     setEditing(
       tenant ?? {
@@ -177,14 +189,12 @@ export function TenantsView() {
         description: '',
         address: '',
         phone: '',
-        customCss: '',
+        ...DEFAULT_TOKENS,
         _count: { categories: 0, items: 0 },
-        primaryColor: '#e74c3c',
-        secondaryColor: '#2c3e50',
-        accentColor: '#f39c12',
         createdAt: '',
       },
     );
+    setTokens(tokensFromTenant(tenant));
     setOpen(true);
   }
 
@@ -328,33 +338,112 @@ export function TenantsView() {
                   <Input name="phone" defaultValue={editing?.phone ?? ''} dir="ltr" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>{t('customCss')}</Label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const ta = document.querySelector<HTMLTextAreaElement>('[name="customCss"]');
-                      if (ta) {
-                        const p = editing?.primaryColor ?? '#e74c3c';
-                        const s = editing?.secondaryColor ?? '#2c3e50';
-                        const a = editing?.accentColor ?? '#f39c12';
-                        ta.value = generateStarterCss({ primary: p, secondary: s, accent: a });
-                      }
-                    }}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {t('generateStarter')}
-                  </button>
+              <div className="border-t pt-4 space-y-4">
+                <p className="text-xs font-medium text-muted-foreground tracking-wide">{t('appearance')}</p>
+                <div className="space-y-2">
+                  <Label>{t('themePreset')}</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {THEME_PRESETS.map((p) => {
+                      const active = JSON.stringify(tokens) === JSON.stringify(p.tokens);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setTokens(p.tokens)}
+                          aria-pressed={active}
+                          className={`rounded-lg border p-2 text-left transition-colors ${
+                            active ? 'border-primary ring-1 ring-primary' : 'border-input hover:border-primary/50'
+                          }`}
+                        >
+                          <span
+                            className="flex h-10 items-center justify-center rounded-md"
+                            style={{ background: p.tokens.backgroundColor }}
+                          >
+                            <span
+                              className="size-4 rounded-full"
+                              style={{ background: p.tokens.primaryColor }}
+                            />
+                          </span>
+                          <span className="mt-1.5 block text-xs font-medium">{t(p.labelKey)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <textarea
-                  name="customCss"
-                  defaultValue={editing?.customCss ?? ''}
-                  className="w-full rounded-lg border border-input bg-transparent p-3 text-xs font-mono leading-relaxed"
-                  rows={10}
-                  dir="ltr"
-                  placeholder="/* Write CSS here. Leave empty for default styling. */"
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {COLOR_FIELDS.map((field) => (
+                    <div key={field} className="space-y-1.5">
+                      <Label>{t(field)}</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={tokens[field]}
+                          onChange={(e) => setTokens((prev) => ({ ...prev, [field]: e.target.value }))}
+                          className="size-8 cursor-pointer rounded border border-input bg-transparent p-0.5"
+                          aria-label={t(field)}
+                        />
+                        <span className="text-xs text-muted-foreground tabular-nums" dir="ltr">
+                          {tokens[field]}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t('headingFont')}</Label>
+                    <select
+                      value={tokens.headingFont}
+                      onChange={(e) => setTokens((prev) => ({ ...prev, headingFont: e.target.value }))}
+                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                    >
+                      {HEADING_FONT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {t(o.labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('bodyFont')}</Label>
+                    <select
+                      value={tokens.bodyFont}
+                      onChange={(e) => setTokens((prev) => ({ ...prev, bodyFont: e.target.value }))}
+                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                    >
+                      {BODY_FONT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {t(o.labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('cornerStyle')}</Label>
+                    <select
+                      value={RADIUS_OPTIONS.find((o) => o.tokens.borderRadiusLg === tokens.borderRadiusLg)?.value ?? ''}
+                      onChange={(e) => {
+                        const opt = RADIUS_OPTIONS.find((o) => o.value === e.target.value);
+                        if (opt) setTokens((prev) => ({ ...prev, ...opt.tokens }));
+                      }}
+                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                    >
+                      {RADIUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {t(o.labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={tokens.shadow !== SHADOW_OFF}
+                    onChange={(e) => setTokens((prev) => ({ ...prev, shadow: e.target.checked ? SHADOW_ON : SHADOW_OFF }))}
+                  />
+                  {t('cardShadow')}
+                </label>
               </div>
             </div>
             <DialogFooter>

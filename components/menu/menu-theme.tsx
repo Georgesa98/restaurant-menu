@@ -407,7 +407,6 @@ export function MenuTheme({ tenant }: { tenant: TenantData }) {
         }
       }
 
-      ${tenant.customCss ?? ''}
     `}</style>
   );
 }

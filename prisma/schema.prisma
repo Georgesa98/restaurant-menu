@@ -131,8 +131,6 @@ model Tenant {
   menuLayout      String @default("single")
   spacing         String @default("comfortable")
 
-  customCss       String?
-
   logoUrl     String?
   coverUrl    String?
   description String?

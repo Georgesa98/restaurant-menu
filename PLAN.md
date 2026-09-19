@@ -109,7 +109,7 @@ Domain→slug map inlined at build time into the root `index.html`. The redirect
 | `cardStyle`       | `.menu-card { ... }` |
 | `menuLayout`      | `--menu-grid`        |
 | `spacing`         | `--space`            |
-| `customCss`       | _(raw injection)_    |
+| `customCss`       | _(removed 2026-09-19: freeform CSS box replaced by curated presets + constrained token editor; column dropped)_ |
 
 ### 1.3 — Category deep links
 
@@ -436,29 +436,21 @@ Every semantic element gets a class name so custom CSS can target it:
 
 No structural changes — only adding `className` attributes. Existing inline styles and `menu-card` class remain untouched.
 
-### 6.5.2 — Include `customCss` in tenant API
+### 6.5.2 — ~~Include `customCss` in tenant API~~ (retired 2026-09-19)
 
-Both `POST /api/tenants` and `PUT /api/tenants/:id` in `api-server/routes/tenants.ts` need `customCss` added to the data payload (create + update).
+Freeform per-tenant CSS was removed (injection risk, no sanitization/preview).
+Theming is now: curated presets (`lib/tenant-presets.ts`: Valley/Dark/Minimal/Warm)
++ constrained overrides (color pickers, font/radius selects, shadow toggle) in the
+tenant dialog, flowing through the existing structured token fields. The
+`customCss` column was dropped (`20260919124130_drop_tenant_custom_css`).
 
-### 6.5.3 — Add CSS textarea to TenantsView dialog
+### 6.5.3 — ~~Add CSS textarea to TenantsView dialog~~ (retired 2026-09-19)
 
-In `components/admin/tenants-view.tsx`:
+Replaced by the Appearance section (preset picker + token inputs); see 6.5.2.
 
-- Add `customCss` to the Tenant type
-- Add a `<textarea>` in the dialog form (monospace font, ~200px height, plain text)
-- Include `customCss` in the form data submission
-- Set a default empty string in `openEdit()`
+### 6.5.4 — ~~Seed demo CSS~~ (retired 2026-09-19)
 
-For convenience, add a "Generate starter" button that pre-fills the textarea with a commented CSS template showing all available class hooks and variable names — so the admin knows what to target.
-
-### 6.5.4 — Seed demo CSS (optional)
-
-Add example `customCss` to the two demo tenants in `prisma/seed.ts` to show the visual difference:
-
-- **Trattoria Roma**: Classic Italian — bordered cards, serif category names in uppercase, prices right-aligned in a badge, thin dividers between items
-- **Sakura Sushi Bar**: Modern Japanese — no card background, items separated by a subtle line, prices inline after name in smaller text
-
-This gives immediate visual proof that the system works and inspires tenant admins.
+No per-tenant CSS is seeded (or possible); demo tenants use preset token sets.
 
 ## Phase 7: Deployment (Coolify) ⏳ _(pending)_
 

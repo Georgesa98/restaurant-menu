@@ -55,7 +55,6 @@ export async function PUT(req: Request, { params }: Params) {
       cardStyle: body.cardStyle,
       menuLayout: body.menuLayout,
       spacing: body.spacing,
-      customCss: body.customCss,
       logoUrl: body.logoUrl,
       coverUrl: body.coverUrl,
       description: body.description,
