@@ -84,6 +84,7 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
           onQueryChange={setQuery}
           searchPlaceholder={tm('searchDishes')}
           clearLabel={tm('clear')}
+          notice={tm('orderNotice')}
         />
 
         <div className="mx-auto px-4 py-6 sm:py-8" style={{ maxWidth: '900px' }}>

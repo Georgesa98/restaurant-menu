@@ -22,7 +22,8 @@
     "total": "Total",
     "clearOrder": "Clear order",
     "itemCount": "{count} {count, plural, one {item} other {items}}",
-    "tapToAdd": "Tap + to add more"
+    "tapToAdd": "Tap + to add more",
+    "orderNotice": "Your list is not sent to the kitchen — please show it to our staff"
   },
   "nav": {
     "home": "Menu",

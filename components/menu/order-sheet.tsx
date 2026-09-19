@@ -76,6 +76,8 @@ export function OrderSheet({
       <div ref={sheetRef} className="order-sheet">
         <div className="order-sheet-handle" />
 
+        <p className="order-sheet-notice">{t('orderNotice')}</p>
+
         <div className="order-sheet-header">
           <div>
             <h2 className="order-sheet-title">{t('yourOrder')}</h2>
@@ -212,6 +214,19 @@ export function OrderSheet({
           border-radius: 2px;
           background: #C9C0B2;
           margin: 10px auto 6px;
+          flex-shrink: 0;
+        }
+
+        .order-sheet-notice {
+          font-family: ${tenant.bodyFont};
+          font-size: 12px;
+          text-align: center;
+          color: ${tenant.textMuted};
+          background: #F6F1E7;
+          border-top: 0.5px solid #E4DDCF;
+          border-bottom: 0.5px solid #E4DDCF;
+          margin: 0;
+          padding: 8px 16px;
           flex-shrink: 0;
         }
 

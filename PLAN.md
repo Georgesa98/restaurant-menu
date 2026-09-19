@@ -703,6 +703,10 @@ raises `syncRequired`; tablets compare cheaply; super-admin sees the fleet.
   thumbnails + `missingOnly` filter in `items-view`; featured pins
   (`isFeatured`/`featuredUntil`, migration `20260914195512_featured_slots`,
   `PATCH /api/items/:id/featured`); bilingual search (`lib/search.ts`).
+- **Guest-list notice (2026-09-18):** the in-app order list is a guest-side
+  shortlist — NOT sent to the kitchen/bar; guests show it to the staff.
+  `ViewingNotice` pill in the hero + notice line atop the order sheet
+  (`menu.orderNotice`, EN/AR). Ordering UI stays fully working.
 
 ### Verified
 

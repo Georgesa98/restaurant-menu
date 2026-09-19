@@ -9,7 +9,7 @@ import { searchRank } from '@/lib/search';
 import { resolveTranslation } from './menu-helpers';
 import { useOrderCart } from './use-order-cart';
 import { MenuTheme } from './menu-theme';
-import { MenuSearchField } from './menu-hero';
+import { MenuSearchField, ViewingNotice } from './menu-hero';
 import { ItemCard } from './item-card';
 import { MenuOrderFooter } from './menu-order-footer';
 import { LanguageSwitcher } from './language-switcher';
@@ -81,6 +81,8 @@ export function CategoryDetail({
             <LanguageSwitcher locale={locale} />
           </div>
         </div>
+
+        <ViewingNotice text={tm('orderNotice')} isRtl={isRtl} />
 
         <MenuSearchField
           query={query}
