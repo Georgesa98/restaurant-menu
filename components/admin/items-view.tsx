@@ -490,7 +490,11 @@ export function ItemsView() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>{t('categories')}</Label>
-                  <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? '')}>
+                  <Select
+                    value={categoryId}
+                    onValueChange={(value) => setCategoryId(value ?? '')}
+                    items={categories.map((c) => ({ value: c.id, label: c.name }))}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="—" />
                     </SelectTrigger>
