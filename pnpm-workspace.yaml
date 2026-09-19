@@ -1,8 +1,26 @@
+# Single-package repo: the packages field must be present, otherwise
+# `pnpm run <script>` fails with "ERROR packages field missing or empty"
+# (pnpm/pnpm#9361) in any stage that sees this file (Docker build stage
+# does COPY . . before `pnpm run build`).
+packages:
+  - '.'
+
+# Build-script approvals, spelled both ways so Docker (pnpm 9) and local
+# (pnpm 10+) each honor them: v9 reads onlyBuiltDependencies, v10 reads
+# allowBuilds; each version ignores the unknown key with a warning.
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@prisma/engines'
+  - '@swc/core'
+  - esbuild
+  - prisma
+  - sharp
+  - unrs-resolver
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  '@prisma/engines': set this to true or false
-  '@swc/core': set this to true or false
-  esbuild: set this to true or false
-  prisma: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  '@swc/core': true
+  esbuild: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true

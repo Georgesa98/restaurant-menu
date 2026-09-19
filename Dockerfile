@@ -9,7 +9,9 @@ RUN npm install -g pnpm@9
 
 # ---- dependencies (cached unless manifests change) ----
 FROM base AS deps
-COPY package.json pnpm-lock.yaml prisma.config.ts ./
+# pnpm-workspace.yaml must be visible here too: the build stage sees it via
+# COPY . ., and install must resolve the same workspace config (packages).
+COPY package.json pnpm-lock.yaml prisma.config.ts pnpm-workspace.yaml ./
 COPY prisma ./prisma
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
