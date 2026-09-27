@@ -76,9 +76,7 @@ function SortableCard({
   const priceLabel =
     item.variants.length || item.basePrice
       ? formatSyp(
-          item.variants.length
-            ? Math.min(...item.variants.map((v) => v.price))
-            : Number(item.basePrice),
+          item.variants.length ? Math.min(...item.variants.map((v) => v.price)) : Number(item.basePrice),
           locale,
           item.variants.length > 0,
         )
@@ -145,9 +143,7 @@ function SortableCard({
             onClick={() => onToggleFeatured(item)}
             title={item.isFeatured ? t('unpinItem') : t('pinItem')}
           >
-            <Pin
-              className={`size-3.5 ${item.isFeatured ? 'fill-amber text-amber' : ''}`}
-            />
+            <Pin className={`size-3.5 ${item.isFeatured ? 'fill-amber text-amber' : ''}`} />
           </Button>
           <Button variant="ghost" size="xs" onClick={() => onEdit(item)}>
             <Pencil className="size-3.5" />
@@ -259,7 +255,7 @@ export function ItemsView() {
       categoryId,
       name: data.get('name') as string,
       description: (data.get('description') as string) || null,
-      basePrice: variants.length ? null : (parseFloat(data.get('basePrice') as string) || null),
+      basePrice: variants.length ? null : parseFloat(data.get('basePrice') as string) || null,
       imageUrl: (data.get('imageUrl') as string) || null,
       isAvailable: data.get('isAvailable') === 'on',
       displayOrder: Number(data.get('displayOrder')),
@@ -395,9 +391,7 @@ export function ItemsView() {
             resetPage();
           }}
           className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
-            missingOnly
-              ? 'bg-amber text-white'
-              : 'bg-muted text-muted-foreground hover:text-foreground'
+            missingOnly ? 'bg-amber text-white' : 'bg-muted text-muted-foreground hover:text-foreground'
           }`}
         >
           {t('missingOnly')}

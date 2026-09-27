@@ -38,21 +38,19 @@ export async function uploadToBucket(
 
   const results: Record<string, string> = {};
   await Promise.all(
-    variants.map((v) => {
+    variants.map(async (v) => {
       const storageKey = `uploads/${tenantId}/${v.key}`;
-      return s3()
-        .send(
-          new PutObjectCommand({
-            Bucket: bucket,
-            Key: storageKey,
-            Body: v.buffer,
-            ContentType: v.contentType,
-          }),
-        )
-        .then(() => {
-          const name = v.key.replace(/\.\w+$/, '');
-          results[name] = storageKey;
-        });
+      await s3().send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: storageKey,
+          Body: v.buffer,
+          ContentType: v.contentType,
+          CacheControl: 'public, max-age=31536000, immutable',
+        }),
+      );
+      const name = v.key.replace(/\.\w+$/, '');
+      results[name] = storageKey;
     }),
   );
 
