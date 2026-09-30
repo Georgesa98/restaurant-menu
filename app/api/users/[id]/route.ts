@@ -4,6 +4,26 @@ import { requireSuper, guardSuperAdminChange } from '@/lib/user-guards';
 
 type Params = { params: Promise<{ id: string }> };
 
+/** Get a single user (super-admin only), with tenant attached like the list. */
+export async function GET(_req: Request, { params }: Params) {
+  const r = await requireSession();
+  if ('response' in r) return r.response;
+  const denied = requireSuper(r.session);
+  if (denied) return denied;
+
+  const { id } = await params;
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) return Response.json({ error: 'Not found' }, { status: 404 });
+
+  const tenant = user.tenantId
+    ? await prisma.tenant.findUnique({
+        where: { id: user.tenantId },
+        select: { id: true, name: true, slug: true },
+      })
+    : null;
+  return Response.json({ ...user, tenant: tenant ?? null });
+}
+
 /** Update a user (super-admin only): name, username, role, tenant. */
 export async function PATCH(req: Request, { params }: Params) {
   const r = await requireSession();
