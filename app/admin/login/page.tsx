@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import axios from 'axios';
@@ -19,6 +19,20 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const t = useTranslations('admin');
 
+  // Public route (outside AuthProvider): send already-signed-in staff to /admin.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get('/api/auth/get-session', { withCredentials: true });
+        if (res.data?.user) {
+          router.replace(res.data.user.role === 'SUPER_ADMIN' ? `/super/tenants` : `/admin/items`);
+        }
+      } catch {
+        // No session — stay on the login form.
+      }
+    })();
+  }, [router]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -26,7 +40,14 @@ export default function AdminLoginPage() {
     try {
       const res = await api.post('/api/auth/sign-in/username', { username, password });
       if (res.data.token) {
-        router.push(`/admin`);
+        try {
+          const session = await api.get('/api/auth/get-session', { withCredentials: true });
+          router.push(
+            session.data?.user?.role === 'SUPER_ADMIN' ? `/super/tenants` : `/admin/items`,
+          );
+        } catch {
+          router.push(`/admin`);
+        }
       }
     } catch (err) {
       // axios throws identically for HTTP errors and network failures —
