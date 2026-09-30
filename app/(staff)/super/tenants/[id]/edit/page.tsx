@@ -1,0 +1,100 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useParams, useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+import { toast } from '@/components/ui/toast';
+import { TenantForm } from '@/components/admin/tenant-form';
+import { DEFAULT_TOKENS } from '@/lib/tenant-presets';
+import type { TenantFormInput } from '@/lib/validations/tenant';
+
+function toPayload(data: TenantFormInput) {
+  return {
+    name: data.name,
+    slug: data.slug,
+    domain: data.domain || null,
+    plan: data.plan,
+    isActive: data.isActive,
+    defaultLocale: data.defaultLocale,
+    description: data.description || null,
+    address: data.address || null,
+    phone: data.phone || null,
+    ...data.theme,
+  };
+}
+
+export default function EditTenantPage() {
+  const { id: tenantId } = useParams();
+  const t = useTranslations('admin');
+  const router = useRouter();
+  const [initialValues, setInitialValues] = useState<TenantFormInput | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  async function getTenant() {
+    if (!tenantId) return;
+    setIsLoading(true);
+    try {
+      const res = await api.get(`/api/tenants/${tenantId}`);
+      const d = res.data;
+      setInitialValues({
+        name: d.name,
+        slug: d.slug ?? '',
+        domain: d.domain ?? null,
+        plan: d.plan ?? 'FREE',
+        isActive: d.isActive ?? true,
+        defaultLocale: d.defaultLocale ?? 'en',
+        description: d.description ?? '',
+        address: d.address ?? '',
+        phone: d.phone ?? '',
+        theme: {
+          primaryColor: d.primaryColor ?? DEFAULT_TOKENS.primaryColor,
+          secondaryColor: d.secondaryColor ?? DEFAULT_TOKENS.secondaryColor,
+          accentColor: d.accentColor ?? DEFAULT_TOKENS.accentColor,
+          backgroundColor: d.backgroundColor ?? DEFAULT_TOKENS.backgroundColor,
+          surfaceColor: d.surfaceColor ?? DEFAULT_TOKENS.surfaceColor,
+          textColor: d.textColor ?? DEFAULT_TOKENS.textColor,
+          textMuted: d.textMuted ?? DEFAULT_TOKENS.textMuted,
+          headingFont: d.headingFont ?? DEFAULT_TOKENS.headingFont,
+          bodyFont: d.bodyFont ?? DEFAULT_TOKENS.bodyFont,
+          borderRadiusSm: d.borderRadiusSm ?? DEFAULT_TOKENS.borderRadiusSm,
+          borderRadiusMd: d.borderRadiusMd ?? DEFAULT_TOKENS.borderRadiusMd,
+          borderRadiusLg: d.borderRadiusLg ?? DEFAULT_TOKENS.borderRadiusLg,
+          shadow: d.shadow ?? DEFAULT_TOKENS.shadow,
+        },
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    getTenant();
+  }, [tenantId]);
+
+  async function onSubmit(data: TenantFormInput) {
+    if (!tenantId) return;
+    setServerError(null);
+    try {
+      await api.put(`/api/tenants/${tenantId}`, toPayload(data));
+      toast.add({ type: 'success', description: t('editSuccess', { name: data.name }) });
+      router.push('/super/tenants');
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setServerError(typeof msg === 'string' ? msg : t('editError', { name: data.name }));
+    }
+  }
+
+  if (isLoading) return <p>{t('loading')}</p>;
+  if (!initialValues) return <p>Not Found</p>;
+
+  return (
+    <>
+      <h1 className="text-lg font-semibold mb-6">
+        {t('edit')} {t('tenant')}
+      </h1>
+      <TenantForm initialValues={initialValues} serverError={serverError} onSubmit={onSubmit} />
+    </>
+  );
+}
