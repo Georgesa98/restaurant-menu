@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
-import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useAuth } from './auth-provider';
+import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 export function ExportButton({ className }: { className?: string }) {
@@ -44,18 +44,19 @@ export function ExportButton({ className }: { className?: string }) {
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleExport}
-      disabled={loading}
-      className={cn(
-        'h-9 w-full justify-start gap-2.5 rounded-xl px-3 text-[13.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
-        className
-      )}
-    >
-      <Download className="size-[18px]" strokeWidth={1.9} />
-      {loading ? t('exporting') : t('export')}
-    </Button>
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        tooltip={t('export')}
+        onClick={handleExport}
+        disabled={loading}
+        className={cn(
+          'h-9 rounded-xl px-3 text-[13.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]',
+          className
+        )}
+      >
+        <Download strokeWidth={1.9} />
+        <span>{loading ? t('exporting') : t('export')}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
