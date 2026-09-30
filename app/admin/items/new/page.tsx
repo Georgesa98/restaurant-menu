@@ -32,11 +32,16 @@ export default function NewItemPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [catsLoading, setCatsLoading] = useState(true);
 
   async function getCategories() {
     const tenantId = user?.role === 'SUPER_ADMIN' ? '' : user?.tenantId;
-    const res = await api.get('/api/categories', { params: { tenantId } });
-    setCategories(res.data);
+    try {
+      const res = await api.get('/api/categories', { params: { tenantId } });
+      setCategories(res.data);
+    } finally {
+      setCatsLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -70,7 +75,7 @@ export default function NewItemPage() {
       <h1 className="text-lg font-semibold mb-6">
         {t('create')} {t('items')}
       </h1>
-      <ItemForm categories={categories} onSubmit={onSubmit} />
+      {catsLoading ? <p>{t('loading')}</p> : <ItemForm categories={categories} onSubmit={onSubmit} />}
     </>
   );
 }

@@ -83,13 +83,19 @@ export function ItemForm({
         <Controller
           control={control}
           name="categoryId"
-          render={({ field, fieldState }) => (
-            <Field>
-              <FieldLabel>{t('categories')}</FieldLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
+          render={({ field, fieldState }) => {
+            const selected = categories.find((c) => c.id === field.value);
+            return (
+              <Field>
+                <FieldLabel>{t('categories')}</FieldLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    {selected ? (
+                      <span className="flex flex-1 text-left line-clamp-1">{selected.name}</span>
+                    ) : (
+                      <SelectValue placeholder="—" />
+                    )}
+                  </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
@@ -98,9 +104,10 @@ export function ItemForm({
                   ))}
                 </SelectContent>
               </Select>
-              {fieldState.error?.message && <p className="text-xs text-destructive">{t(fieldState.error.message)}</p>}
-            </Field>
-          )}
+                {fieldState.error?.message && <p className="text-xs text-destructive">{t(fieldState.error.message)}</p>}
+              </Field>
+            );
+          }}
         />
         <Controller
           control={control}

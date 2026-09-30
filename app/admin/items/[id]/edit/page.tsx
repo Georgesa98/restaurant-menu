@@ -35,6 +35,7 @@ export default function EditItemPage() {
   const [item, setItem] = useState<Item | null>(null);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [catsLoading, setCatsLoading] = useState(true);
 
   async function getItem() {
     if (!itemId) return;
@@ -49,8 +50,12 @@ export default function EditItemPage() {
 
   async function getCategories() {
     const tenantId = user?.role === 'SUPER_ADMIN' ? '' : user?.tenantId;
-    const res = await api.get('/api/categories', { params: { tenantId } });
-    setCategories(res.data);
+    try {
+      const res = await api.get('/api/categories', { params: { tenantId } });
+      setCategories(res.data);
+    } finally {
+      setCatsLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -83,7 +88,7 @@ export default function EditItemPage() {
     }
   }
 
-  if (isLoading) return <p>{t('loading')}</p>;
+  if (isLoading || catsLoading) return <p>{t('loading')}</p>;
   if (!item) return <p>Not Found</p>;
 
   const initialValues: ItemFormInput = {
