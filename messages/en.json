@@ -78,6 +78,12 @@
     "all": "All",
     "tenants": "Tenants",
     "import": "Import",
+    "importing": "Importing...",
+    "importDropHint": "Drop a JSON file or click to browse",
+    "importComplete": "Import complete",
+    "importAnother": "Import another file",
+    "importFailed": "Import failed — check the file and try again",
+    "importErrors": "Errors",
     "export": "Export",
     "exporting": "Exporting...",
     "searchItems": "Search items…",
@@ -170,6 +176,12 @@
     "justNow": "just now",
     "minutesAgo": "{count}m ago",
     "hoursAgo": "{count}h ago",
-    "daysAgo": "{count}d ago"
+    "daysAgo": "{count}d ago",
+    "required": "{name} is required",
+    "createSuccess": "{name} has been created",
+    "createError": "Failed to create {name}",
+    "editSuccess": "{name} has been updated",
+    "editError": "Failed to update {name}",
+    "back": "Go back"
   }
 }

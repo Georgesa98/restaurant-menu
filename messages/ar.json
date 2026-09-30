@@ -78,6 +78,12 @@
     "all": "الكل",
     "tenants": "المستأجرون",
     "import": "استيراد",
+    "importing": "جاري الاستيراد...",
+    "importDropHint": "أسقط ملف JSON أو انقر للتصفح",
+    "importComplete": "اكتمل الاستيراد",
+    "importAnother": "استيراد ملف آخر",
+    "importFailed": "فشل الاستيراد — تحقق من الملف وحاول مجدداً",
+    "importErrors": "أخطاء",
     "export": "تصدير",
     "exporting": "جاري التصدير...",
     "searchItems": "ابحث في العناصر...",
@@ -170,6 +176,12 @@
     "justNow": "الآن",
     "minutesAgo": "منذ {count} د",
     "hoursAgo": "منذ {count} س",
-    "daysAgo": "منذ {count} يوم"
+    "daysAgo": "منذ {count} يوم",
+    "required": "{name} مطلوب",
+    "createSuccess": "تم إنشاء {name}",
+    "createError": "فشل إنشاء {name}",
+    "editSuccess": "تم تحديث {name}",
+    "editError": "فشل تحديث {name}",
+    "back": "رجوع"
   }
 }
