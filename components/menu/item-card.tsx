@@ -1,15 +1,13 @@
 'use client';
 
 import Image from 'next/image';
+import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { isLiveFeatured } from '@/lib/search';
-import {
-  CategorySlugIcon,
-  formatPrice,
-  resolveTranslation,
-  type MenuItem,
-} from './menu-helpers';
-import { qtyKeyFor, type OrderCart } from './use-order-cart';
+import { qtyKeyFor, useCartQuantities, useCartSelectedVariants, useCartStore } from '@/lib/stores/cart-store';
+import { CategorySlugIcon, formatPrice, resolveTranslation, type MenuItem } from './menu-helpers';
+
+type Ripple = { id: number; x: number; y: number };
 
 /** Single dish card: photo (or slug icon wash), name + price, variants, stepper. */
 export function ItemCard({
@@ -18,35 +16,43 @@ export function ItemCard({
   locale,
   addLabel,
   featuredLabel,
-  cart,
 }: {
   item: MenuItem;
   categorySlug: string;
   locale: string;
   addLabel: string;
   featuredLabel: string;
-  cart: OrderCart;
 }) {
+  const quantities = useCartQuantities();
+  const selectedVariants = useCartSelectedVariants();
+  const { setQuantity, selectVariant } = useCartStore();
+  const [ripples, setRipples] = useState<Ripple[]>([]);
+  const isRtl = locale === 'ar';
+
   const itemTrans = resolveTranslation(item, locale);
   const live = isLiveFeatured(item);
   const hasVariants = item.variants.length > 0;
   const selectedVariant = hasVariants
-    ? (item.variants.find((v) => v.id === cart.selectedVariants.get(item.id)) ??
-      item.variants[0])
+    ? (item.variants.find((v) => v.id === selectedVariants[item.id]) ?? item.variants[0])
     : null;
 
-  const qtyKey = qtyKeyFor(item, cart.selectedVariants);
-  const qty = cart.quantities.get(qtyKey) ?? 0;
+  const qtyKey = qtyKeyFor(item, selectedVariants);
+  const qty = quantities[qtyKey] ?? 0;
 
-  const displayPrice = selectedVariant
-    ? Number(selectedVariant.price)
-    : item.basePrice
-      ? Number(item.basePrice)
-      : 0;
+  const displayPrice = selectedVariant ? Number(selectedVariant.price) : item.basePrice ? Number(item.basePrice) : 0;
 
-  const fromPrice = hasVariants
-    ? Math.min(...item.variants.map((v) => Number(v.price)))
-    : displayPrice;
+  const fromPrice = hasVariants ? Math.min(...item.variants.map((v) => Number(v.price))) : displayPrice;
+
+  function handleIncrement(event: React.MouseEvent<HTMLButtonElement>, key: string) {
+    setQuantity(key, 1);
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const id = Date.now() + Math.random();
+    setRipples((prev) => [...prev, { id, x: event.clientX - rect.left, y: event.clientY - rect.top }]);
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== id));
+    }, 500);
+  }
 
   return (
     <article className="menu-card">
@@ -73,46 +79,38 @@ export function ItemCard({
             {live ? `★ ${itemTrans.name}` : itemTrans.name}
           </h3>
           <span className="menu-item-price whitespace-nowrap shrink-0">
-            {hasVariants
-              ? `from ${formatPrice(fromPrice, locale)}`
-              : formatPrice(displayPrice, locale)}
+            {hasVariants ? `from ${formatPrice(fromPrice, locale)}` : formatPrice(displayPrice, locale)}
           </span>
         </div>
 
-        {itemTrans.description && (
-          <p className="menu-item-description mt-1">{itemTrans.description}</p>
-        )}
+        {itemTrans.description && <p className="menu-item-description mt-1">{itemTrans.description}</p>}
 
         {hasVariants && (
           <div className="variant-chips mt-2">
             {item.variants.map((v) => {
-              const isSelected =
-                (cart.selectedVariants.get(item.id) ?? item.variants[0].id) === v.id;
+              const isSelected = (selectedVariants[item.id] ?? item.variants[0].id) === v.id;
               const vKey = `${item.id}:${v.id}`;
-              const hasQty = (cart.quantities.get(vKey) ?? 0) > 0;
+              const hasQty = (quantities[vKey] ?? 0) > 0;
               return (
                 <button
                   key={v.id}
                   type="button"
                   className={`variant-chip ${isSelected ? 'selected' : ''} ${hasQty ? 'has-qty' : ''}`}
-                  onClick={() => cart.selectVariant(item.id, v.id)}
+                  onClick={() => selectVariant(item.id, v.id)}
                 >
-                  {(cart.isRtl ? v.label : v.labelEn)} · {formatPrice(Number(v.price), locale)}
+                  {isRtl ? v.label : v.labelEn} · {formatPrice(Number(v.price), locale)}
                 </button>
               );
             })}
           </div>
         )}
 
-        <div
-          className="mt-auto pt-3 flex"
-          style={{ justifyContent: cart.isRtl ? 'flex-start' : 'flex-end' }}
-        >
+        <div className="mt-auto pt-3 flex" style={{ justifyContent: isRtl ? 'flex-start' : 'flex-end' }}>
           {qty > 0 ? (
             <div className="stepper">
               <button
                 type="button"
-                onClick={() => cart.setQuantity(qtyKey, -1)}
+                onClick={() => setQuantity(qtyKey, -1)}
                 className="stepper-btn"
                 aria-label="Decrease quantity"
               >
@@ -121,32 +119,28 @@ export function ItemCard({
               <span className="stepper-count">{qty}</span>
               <button
                 type="button"
-                onClick={(e) => cart.handleIncrement(e, qtyKey, item.id)}
+                onClick={(e) => handleIncrement(e, qtyKey)}
                 className="stepper-btn"
                 aria-label="Increase quantity"
               >
                 <Plus size={14} strokeWidth={2} />
-                {cart.ripples
-                  .filter((r) => r.itemId === item.id)
-                  .map((r) => (
-                    <span key={r.id} className="ripple" style={{ left: r.x, top: r.y }} />
-                  ))}
+                {ripples.map((r) => (
+                  <span key={r.id} className="ripple" style={{ left: r.x, top: r.y }} />
+                ))}
               </button>
             </div>
           ) : (
             <button
               type="button"
-              onClick={(e) => cart.handleIncrement(e, qtyKey, item.id)}
+              onClick={(e) => handleIncrement(e, qtyKey)}
               className="stepper-btn add"
               aria-label="Add item"
             >
               <Plus size={14} strokeWidth={2} />
               <span>{addLabel}</span>
-              {cart.ripples
-                .filter((r) => r.itemId === item.id)
-                .map((r) => (
-                  <span key={r.id} className="ripple" style={{ left: r.x, top: r.y }} />
-                ))}
+              {ripples.map((r) => (
+                <span key={r.id} className="ripple" style={{ left: r.x, top: r.y }} />
+              ))}
             </button>
           )}
         </div>

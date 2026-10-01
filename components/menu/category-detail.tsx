@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { TenantData } from '@/lib/types';
 import { searchRank } from '@/lib/search';
 import { resolveTranslation } from './menu-helpers';
-import { useOrderCart } from './use-order-cart';
+import { useCartStore } from '@/lib/stores/cart-store';
 import { MenuTheme } from './menu-theme';
 import { MenuSearchField, ViewingNotice } from './menu-hero';
 import { ItemCard } from './item-card';
@@ -29,9 +29,14 @@ export function CategoryDetail({
 }) {
   const tm = useTranslations('menu');
   const [query, setQuery] = useState('');
-  const cart = useOrderCart(tenant.slug, tenant.categories, locale);
+  const { init, ensureVariantDefaults } = useCartStore();
   const isRtl = locale === 'ar';
   const BackIcon = isRtl ? ArrowRight : ArrowLeft;
+
+  useEffect(() => {
+    init(tenant.slug);
+    ensureVariantDefaults(tenant.categories);
+  }, [tenant.slug, tenant.categories, init, ensureVariantDefaults]);
 
   const category = useMemo(
     () => tenant.categories.find((c) => c.slug === categorySlug),
@@ -48,13 +53,7 @@ export function CategoryDetail({
         return {
           item,
           itemTrans,
-          rank: q
-            ? searchRank(
-                q,
-                [item.name, itemTrans.name],
-                [item.description, itemTrans.description],
-              )
-            : 1,
+          rank: q ? searchRank(q, [item.name, itemTrans.name], [item.description, itemTrans.description]) : 1,
         };
       })
       .filter((r): r is typeof r & { rank: number } => r.rank !== null)
@@ -104,13 +103,8 @@ export function CategoryDetail({
               </div>
 
               {ranked.length === 0 ? (
-                <p
-                  className="text-center text-sm py-8"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {query.trim()
-                    ? tm('noResults', { query: query.trim() })
-                    : tm('noItems')}
+                <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
+                  {query.trim() ? tm('noResults', { query: query.trim() }) : tm('noItems')}
                 </p>
               ) : (
                 <div
@@ -125,7 +119,6 @@ export function CategoryDetail({
                       locale={locale}
                       addLabel={tm('add')}
                       featuredLabel={tm('featured')}
-                      cart={cart}
                     />
                   ))}
                 </div>
@@ -148,7 +141,7 @@ export function CategoryDetail({
           )}
         </div>
 
-        <MenuOrderFooter cart={cart} tenant={tenant} locale={locale} tm={tm} />
+        <MenuOrderFooter tenant={tenant} locale={locale} tm={tm} />
       </main>
     </>
   );

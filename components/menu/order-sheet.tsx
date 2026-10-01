@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Minus, Plus, X } from 'lucide-react';
 import type { TenantData } from '@/lib/types';
-import type { OrderedEntry } from './menu-helpers';
+import { getCartTotals, useCartQuantities, useCartStore } from '@/lib/stores/cart-store';
 
 function formatPrice(price: number, locale: string): string {
   const n = new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
@@ -17,24 +17,18 @@ function formatPrice(price: number, locale: string): string {
 export function OrderSheet({
   isOpen,
   onClose,
-  onClearOrder,
-  entries,
-  quantities,
-  onUpdateQuantity,
   locale,
   t,
   tenant,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onClearOrder: () => void;
-  entries: OrderedEntry[];
-  quantities: Map<string, number>;
-  onUpdateQuantity: (key: string, delta: number) => void;
   locale: string;
   t: ReturnType<typeof useTranslations>;
   tenant: TenantData;
 }) {
+  const quantities = useCartQuantities();
+  const { setQuantity, clearOrder } = useCartStore();
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
@@ -56,8 +50,13 @@ export function OrderSheet({
     };
   }, [isOpen, onClose]);
 
-  const ordered = entries
-    .map((entry) => ({ entry, qty: quantities.get(entry.key) ?? 0 }))
+  const { orderedEntries } = useMemo(
+    () => getCartTotals(quantities, tenant.categories, locale),
+    [quantities, tenant.categories, locale],
+  );
+
+  const ordered = orderedEntries
+    .map((entry) => ({ entry, qty: quantities[entry.key] ?? 0 }))
     .filter(({ qty }) => qty > 0)
     .sort((a, b) => a.entry.categoryName.localeCompare(b.entry.categoryName));
 
@@ -87,11 +86,7 @@ export function OrderSheet({
           </div>
           <div className="order-sheet-actions">
             {ordered.length > 0 && (
-              <button
-                type="button"
-                onClick={onClearOrder}
-                className="order-sheet-clear"
-              >
+              <button type="button" onClick={clearOrder} className="order-sheet-clear">
                 {t('clearOrder')}
               </button>
             )}
@@ -121,15 +116,13 @@ export function OrderSheet({
                       <p className="order-sheet-item-name">{entry.label}</p>
                       <p className="order-sheet-item-category">{entry.categoryName}</p>
                     </div>
-                    <p className="order-sheet-line-total">
-                      {formatPrice(entry.price * qty, locale)}
-                    </p>
+                    <p className="order-sheet-line-total">{formatPrice(entry.price * qty, locale)}</p>
                   </div>
 
                   <div className="order-sheet-stepper">
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(entry.key, -1)}
+                      onClick={() => setQuantity(entry.key, -1)}
                       className="order-sheet-stepper-btn"
                       aria-label="Decrease quantity"
                     >
@@ -138,7 +131,7 @@ export function OrderSheet({
                     <span className="order-sheet-stepper-count">{qty}</span>
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(entry.key, 1)}
+                      onClick={() => setQuantity(entry.key, 1)}
                       className="order-sheet-stepper-btn"
                       aria-label="Increase quantity"
                     >

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import type { TenantData } from '@/lib/types';
 import { searchRank, isLiveFeatured } from '@/lib/search';
 import { resolveTranslation } from './menu-helpers';
-import { useOrderCart } from './use-order-cart';
+import { useCartStore } from '@/lib/stores/cart-store';
 import { MenuTheme } from './menu-theme';
 import { MenuHero } from './menu-hero';
 import { CategoryCard } from './category-card';
@@ -22,14 +22,16 @@ import { MenuOrderFooter } from './menu-order-footer';
 export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: string }) {
   const tm = useTranslations('menu');
   const [query, setQuery] = useState('');
-  const cart = useOrderCart(tenant.slug, tenant.categories, locale);
+  const { init, ensureVariantDefaults } = useCartStore();
   const isRtl = locale === 'ar';
 
+  useEffect(() => {
+    init(tenant.slug);
+    ensureVariantDefaults(tenant.categories);
+  }, [tenant.slug, tenant.categories, init, ensureVariantDefaults]);
+
   const categories = useMemo(
-    () =>
-      tenant.categories
-        .filter((c) => c.isActive)
-        .sort((a, b) => a.displayOrder - b.displayOrder),
+    () => tenant.categories.filter((c) => c.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
     [tenant.categories],
   );
 
@@ -56,17 +58,11 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
       for (const item of c.items) {
         if (!item.isAvailable) continue;
         const itemTrans = resolveTranslation(item, locale);
-        const rank = searchRank(
-          q,
-          [item.name, itemTrans.name],
-          [item.description, itemTrans.description],
-        );
+        const rank = searchRank(q, [item.name, itemTrans.name], [item.description, itemTrans.description]);
         if (rank !== null) out.push({ item, categorySlug: c.slug, rank });
       }
     }
-    return out.sort(
-      (a, b) => a.rank - b.rank || a.item.displayOrder - b.item.displayOrder,
-    );
+    return out.sort((a, b) => a.rank - b.rank || a.item.displayOrder - b.item.displayOrder);
   }, [query, categories, locale]);
 
   const searching = searchResults !== null;
@@ -90,10 +86,7 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
         <div className="mx-auto px-4 py-6 sm:py-8" style={{ maxWidth: '900px' }}>
           {searching ? (
             searchResults.length === 0 ? (
-              <p
-                className="text-center text-sm py-8"
-                style={{ color: 'var(--text-muted)' }}
-              >
+              <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
                 {tm('noResults', { query: query.trim() })}
               </p>
             ) : (
@@ -109,7 +102,6 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
                     locale={locale}
                     addLabel={tm('add')}
                     featuredLabel={tm('featured')}
-                    cart={cart}
                   />
                 ))}
               </div>
@@ -133,7 +125,6 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
                         locale={locale}
                         addLabel={tm('add')}
                         featuredLabel={tm('featured')}
-                        cart={cart}
                       />
                     ))}
                   </div>
@@ -141,18 +132,12 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
               )}
 
               <section>
-                <div
-                  className="mb-4 pb-2"
-                  style={{ borderBottom: '0.5px solid #E4DDCF' }}
-                >
+                <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
                   <h2 className="menu-section-header">{tm('browseCategories')}</h2>
                 </div>
 
                 {categories.length === 0 ? (
-                  <p
-                    className="text-center text-sm py-8"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
+                  <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
                     {tm('noCategories')}
                   </p>
                 ) : (
@@ -190,7 +175,7 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
           )}
         </div>
 
-        <MenuOrderFooter cart={cart} tenant={tenant} locale={locale} tm={tm} />
+        <MenuOrderFooter tenant={tenant} locale={locale} tm={tm} />
       </main>
     </>
   );

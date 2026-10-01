@@ -43,30 +43,6 @@ export async function getTenantWithMenu(slug: string): Promise<TenantData | null
   return data as TenantData | null;
 }
 
-export async function getTenantWithCategory(
-  slug: string,
-  categorySlug: string,
-): Promise<TenantData | null> {
-  const data = await prisma.tenant.findUnique({
-    where: { slug },
-    include: {
-      categories: {
-        where: { slug: categorySlug, isActive: true },
-        include: {
-        items: {
-          include: {
-            translations: { orderBy: { locale: 'asc' } },
-            variants: { orderBy: { sortOrder: 'asc' } },
-          },
-        },
-          translations: { orderBy: { locale: 'asc' } },
-        },
-      },
-    },
-  });
-  return data as TenantData | null;
-}
-
 export async function getAllTenantSlugs(): Promise<{ slug: string }[]> {
   const rows = await prisma.tenant.findMany({
     where: { isActive: true, slug: { not: null } },
