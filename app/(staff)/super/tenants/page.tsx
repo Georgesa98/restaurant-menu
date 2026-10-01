@@ -44,6 +44,7 @@ export default function SuperTenantsPage() {
     () =>
       getTenantColumns(t, {
         onEdit: (row) => router.push(`/super/tenants/${row.id}/edit`),
+        onTheme: (row) => router.push(`/super/themes/${row.id}`),
         onRemove: removeTenant,
         onRequestSync: requestSync,
       }),

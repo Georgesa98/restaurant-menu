@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { ApiError, getTenant as fetchTenant, updateTenant } from '@/service';
 import { toast } from '@/components/ui/toast';
+import { Button } from '@/components/ui/button';
+import { Palette } from 'lucide-react';
 import { TenantForm } from '@/components/admin/tenant-form';
 import { DEFAULT_TOKENS } from '@/lib/tenant-presets';
 import type { TenantFormInput } from '@/lib/validations/tenant';
@@ -90,9 +92,15 @@ export default function EditTenantPage() {
 
   return (
     <>
-      <h1 className="text-lg font-semibold mb-6">
-        {t('edit')} {t('tenant')}
-      </h1>
+      <div className="flex items-center justify-between mb-6 gap-3">
+        <h1 className="text-lg font-semibold">
+          {t('edit')} {t('tenant')}
+        </h1>
+        <Button variant="outline" onClick={() => router.push(`/super/themes/${tenantId}`)}>
+          <Palette />
+          {t('customizeTheme')}
+        </Button>
+      </div>
       <TenantForm initialValues={initialValues} serverError={serverError} onSubmit={onSubmit} />
     </>
   );

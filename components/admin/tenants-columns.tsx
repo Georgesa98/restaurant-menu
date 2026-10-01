@@ -1,7 +1,7 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { Pencil, Palette, Trash2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export type TenantRow = {
@@ -24,6 +24,7 @@ export function getTenantColumns(
   t: TFn,
   actions: {
     onEdit: (row: TenantRow) => void;
+    onTheme: (row: TenantRow) => void;
     onRemove: (id: string) => void;
     onRequestSync: (row: TenantRow) => void;
   },
@@ -94,6 +95,15 @@ export function getTenantColumns(
           </Button>
           <Button variant="ghost" size="xs" onClick={() => actions.onEdit(row.original)} aria-label={t('edit')}>
             <Pencil className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => actions.onTheme(row.original)}
+            aria-label={t('customizeTheme')}
+            title={t('customizeTheme')}
+          >
+            <Palette className="size-3.5" />
           </Button>
           <Button
             variant="ghost"
