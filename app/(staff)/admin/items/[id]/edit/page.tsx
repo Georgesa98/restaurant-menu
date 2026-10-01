@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { getAllCategories, getItem as fetchItem, updateItem, upsertItemTranslation } from '@/service';
 import { useAuth } from '@/components/admin/auth-provider';
 import { toast } from '@/components/ui/toast';
 import { ItemForm } from '@/components/admin/item-form';
@@ -41,8 +41,7 @@ export default function EditItemPage() {
     if (!itemId) return;
     setIsLoading(true);
     try {
-      const res = await api.get(`/api/items/${itemId}`);
-      setItem(res.data);
+      setItem(await fetchItem(Array.isArray(itemId) ? itemId[0] : (itemId as string)));
     } finally {
       setIsLoading(false);
     }
@@ -51,8 +50,7 @@ export default function EditItemPage() {
   async function getCategories() {
     const tenantId = user?.role === 'SUPER_ADMIN' ? '' : user?.tenantId;
     try {
-      const res = await api.get('/api/categories', { params: { tenantId } });
-      setCategories(res.data);
+      setCategories(await getAllCategories(tenantId));
     } finally {
       setCatsLoading(false);
     }
@@ -69,13 +67,13 @@ export default function EditItemPage() {
   async function onSubmit(data: ItemFormInput) {
     if (!user || !item) return;
     try {
-      const res = await api.put(`/api/items/${item.id}`, toPayload(data));
-      const savedId = res.data.id as string;
+      const updated = await updateItem(item.id, toPayload(data));
+      const savedId = updated.id;
       for (const locale of LOCALES) {
         const trName = data.translations[locale]?.name;
         const trDesc = data.translations[locale]?.description;
         if (trName) {
-          await api.put(`/api/translations/items/${savedId}/${locale}`, {
+          await upsertItemTranslation(savedId, locale, {
             name: trName,
             description: trDesc || null,
           });

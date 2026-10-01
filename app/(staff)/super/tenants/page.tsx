@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { deleteTenant, getAllTenants, requestTenantSync } from '@/service';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { DataTable } from '@/components/admin/data-table';
@@ -19,8 +19,7 @@ export default function SuperTenantsPage() {
   async function getTenants() {
     setLoading(true);
     try {
-      const res = await api.get('/api/tenants');
-      setTenants(res.data);
+      setTenants(await getAllTenants());
     } finally {
       setLoading(false);
     }
@@ -30,14 +29,14 @@ export default function SuperTenantsPage() {
     getTenants();
   }, []);
 
-  async function deleteTenant(id: string) {
+  async function removeTenant(id: string) {
     if (!confirm(t('confirmDelete'))) return;
-    await api.delete(`/api/tenants/${id}`);
+    await deleteTenant(id);
     getTenants();
   }
 
   async function requestSync(row: TenantRow) {
-    await api.post(`/api/tenants/${row.id}/request-sync`);
+    await requestTenantSync(row.id);
     getTenants();
   }
 
@@ -45,7 +44,7 @@ export default function SuperTenantsPage() {
     () =>
       getTenantColumns(t, {
         onEdit: (row) => router.push(`/super/tenants/${row.id}/edit`),
-        onRemove: deleteTenant,
+        onRemove: removeTenant,
         onRequestSync: requestSync,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps

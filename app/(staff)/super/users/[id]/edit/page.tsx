@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { ApiError, getAllTenants, getUser as fetchUser, updateUser } from '@/service';
 import { toast } from '@/components/ui/toast';
 import { UserForm, type TenantOption } from '@/components/admin/user-form';
 import type { EditUserInput } from '@/lib/validations/user';
@@ -23,8 +23,7 @@ export default function EditUserPage() {
     if (!userId) return;
     setIsLoading(true);
     try {
-      const res = await api.get(`/api/users/${userId}`);
-      setUser(res.data);
+      setUser(await fetchUser(Array.isArray(userId) ? userId[0] : (userId as string)));
     } finally {
       setIsLoading(false);
     }
@@ -32,8 +31,7 @@ export default function EditUserPage() {
 
   async function getTenants() {
     try {
-      const res = await api.get('/api/tenants');
-      setTenants(res.data);
+      setTenants(await getAllTenants());
     } finally {
       setTenantsLoading(false);
     }
@@ -51,7 +49,7 @@ export default function EditUserPage() {
     if (!user) return;
     setServerError(null);
     try {
-      await api.patch(`/api/users/${user.id}`, {
+      await updateUser(user.id, {
         name: data.name,
         username: data.username,
         role: data.role,
@@ -60,7 +58,7 @@ export default function EditUserPage() {
       toast.add({ type: 'success', description: t('editSuccess', { name: data.name }) });
       router.push('/super/users');
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       setServerError(typeof msg === 'string' ? msg : t('editError', { name: data.name }));
     }
   }

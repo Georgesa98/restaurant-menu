@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { createItem, getAllCategories, upsertItemTranslation } from '@/service';
 import { useAuth } from '@/components/admin/auth-provider';
 import { toast } from '@/components/ui/toast';
 import { ItemForm } from '@/components/admin/item-form';
@@ -37,8 +37,7 @@ export default function NewItemPage() {
   async function getCategories() {
     const tenantId = user?.role === 'SUPER_ADMIN' ? '' : user?.tenantId;
     try {
-      const res = await api.get('/api/categories', { params: { tenantId } });
-      setCategories(res.data);
+      setCategories(await getAllCategories(tenantId));
     } finally {
       setCatsLoading(false);
     }
@@ -51,13 +50,13 @@ export default function NewItemPage() {
   async function onSubmit(data: ItemFormInput) {
     if (!user) return;
     try {
-      const res = await api.post('/api/items', { ...toPayload(data), tenantId: user.tenantId });
-      const savedId = res.data.id as string;
+      const saved = await createItem({ ...toPayload(data), tenantId: user.tenantId });
+      const savedId = saved.id;
       for (const locale of LOCALES) {
         const trName = data.translations[locale]?.name;
         const trDesc = data.translations[locale]?.description;
         if (trName) {
-          await api.put(`/api/translations/items/${savedId}/${locale}`, {
+          await upsertItemTranslation(savedId, locale, {
             name: trName,
             description: trDesc || null,
           });

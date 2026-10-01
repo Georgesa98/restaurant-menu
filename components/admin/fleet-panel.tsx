@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { getTenantDevices } from '@/service';
 
 type Device = {
   id: string;
@@ -38,14 +38,16 @@ export function FleetPanel({ tenants }: { tenants: { id: string; name: string }[
       return;
     }
     setFleetLoading(true);
-    api
-      .get(`/api/tenants/${fleetTenant}/devices`)
-      .then((res) => {
-        setDevices(res.data);
+    (async () => {
+      try {
+        setDevices(await getTenantDevices(fleetTenant));
         setFleetNow(Date.now());
-      })
-      .catch(() => setDevices([]))
-      .finally(() => setFleetLoading(false));
+      } catch {
+        setDevices([]);
+      } finally {
+        setFleetLoading(false);
+      }
+    })();
   }, [fleetTenant, tenants]);
 
   return (

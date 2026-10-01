@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { ApiError, createUser, getAllTenants } from '@/service';
 import { toast } from '@/components/ui/toast';
 import { UserForm, type TenantOption } from '@/components/admin/user-form';
 import type { CreateUserInput } from '@/lib/validations/user';
@@ -17,8 +17,7 @@ export default function NewUserPage() {
 
   async function getTenants() {
     try {
-      const res = await api.get('/api/tenants');
-      setTenants(res.data);
+      setTenants(await getAllTenants());
     } finally {
       setTenantsLoading(false);
     }
@@ -31,7 +30,7 @@ export default function NewUserPage() {
   async function onSubmit(data: CreateUserInput) {
     setServerError(null);
     try {
-      await api.post('/api/users', {
+      await createUser({
         name: data.name,
         username: data.username || undefined,
         email: data.email,
@@ -42,7 +41,7 @@ export default function NewUserPage() {
       toast.add({ type: 'success', description: t('createSuccess', { name: data.name }) });
       router.push('/super/users');
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       setServerError(typeof msg === 'string' ? msg : t('createError', { name: data.name }));
     }
   }

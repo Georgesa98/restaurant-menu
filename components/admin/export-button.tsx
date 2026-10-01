@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { exportMenu } from '@/service';
 import { Download } from 'lucide-react';
 import { useAuth } from './auth-provider';
 import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
@@ -16,19 +16,13 @@ export function ExportButton({ className }: { className?: string }) {
   const handleExport = async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      let tenantId: string | undefined;
       if (user?.role === 'SUPER_ADMIN') {
         const tid = prompt('Tenant ID (leave empty for your own):');
-        if (tid) params.tenantId = tid;
+        if (tid) tenantId = tid;
       }
 
-      const res = await api.get('/api/export', {
-        params,
-        responseType: 'blob',
-        headers: { Accept: 'application/json' },
-      });
-
-      const blob = new Blob([res.data], { type: 'application/json' });
+      const blob = await exportMenu(tenantId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

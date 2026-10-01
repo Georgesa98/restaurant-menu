@@ -2,7 +2,7 @@
 import { useAuth } from '@/components/admin/auth-provider';
 import { CategoryForm } from '@/components/admin/category-form';
 import { toast } from '@/components/ui/toast';
-import { api } from '@/lib/api';
+import { getCategory as fetchCategory, updateCategory, upsertCategoryTranslation } from '@/service';
 import { type CategoryFormInput } from '@/lib/validations/category';
 import { Category } from '@prisma/client';
 import { useTranslations } from 'next-intl';
@@ -32,8 +32,8 @@ export default function EditCategoryPage() {
     if (!catId) return;
     setIsLoading(true);
     try {
-      const res = await api.get(`/api/categories/${catId}`);
-      setCat(res.data);
+      const data = await fetchCategory(Array.isArray(catId) ? catId[0] : (catId as string));
+      setCat(data as CategoryWithTranslation);
     } finally {
       setIsLoading(false);
     }
@@ -50,12 +50,12 @@ export default function EditCategoryPage() {
     if (!user || !cat) return;
     console.log('OUT');
     try {
-      const res = await api.put(`/api/categories/${cat.id}`, { ...data });
+      const updated = await updateCategory(cat.id, { ...data });
       for (const locale of LOCALES) {
         const trName = data.translations[locale].name;
         const trDesc = data.translations[locale].description;
         if (trName) {
-          await api.put(`/api/translations/categories/${res.data.id}/${locale}`, {
+          await upsertCategoryTranslation(updated.id, locale, {
             name: trName,
             description: trDesc || null,
           });

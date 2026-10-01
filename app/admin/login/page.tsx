@@ -3,8 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import axios from 'axios';
-import { api } from '@/lib/api';
+import { ApiError, getSession, signInWithUsername } from '@/service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,9 +22,9 @@ export default function AdminLoginPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get('/api/auth/get-session', { withCredentials: true });
-        if (res.data?.user) {
-          router.replace(res.data.user.role === 'SUPER_ADMIN' ? `/super/tenants` : `/admin/items`);
+        const { user } = await getSession();
+        if (user) {
+          router.replace(user.role === 'SUPER_ADMIN' ? `/super/tenants` : `/admin/items`);
         }
       } catch {
         // No session — stay on the login form.
@@ -38,21 +37,21 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/api/auth/sign-in/username', { username, password });
-      if (res.data.token) {
+      const { token } = await signInWithUsername(username, password);
+      if (token) {
         try {
-          const session = await api.get('/api/auth/get-session', { withCredentials: true });
+          const { user } = await getSession();
           router.push(
-            session.data?.user?.role === 'SUPER_ADMIN' ? `/super/tenants` : `/admin/items`,
+            user?.role === 'SUPER_ADMIN' ? `/super/tenants` : `/admin/items`,
           );
         } catch {
           router.push(`/admin`);
         }
       }
     } catch (err) {
-      // axios throws identically for HTTP errors and network failures —
-      // don't blame the credentials when the server is unreachable.
-      if (axios.isAxiosError(err) && !err.response) {
+      // ApiError preserves the axios distinction between HTTP errors and
+      // network failures — don't blame the credentials when unreachable.
+      if (err instanceof ApiError && err.isNetworkError) {
         setError(t('serverUnreachable'));
       } else {
         setError(t('invalidCredentials'));

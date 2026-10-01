@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { ApiError, createTenant } from '@/service';
 import { toast } from '@/components/ui/toast';
 import { TenantForm } from '@/components/admin/tenant-form';
 import type { TenantFormInput } from '@/lib/validations/tenant';
@@ -31,11 +31,11 @@ export default function NewTenantPage() {
   async function onSubmit(data: TenantFormInput) {
     setServerError(null);
     try {
-      await api.post('/api/tenants', toPayload(data));
+      await createTenant(toPayload(data));
       toast.add({ type: 'success', description: t('createSuccess', { name: data.name }) });
       router.push('/super/tenants');
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       setServerError(typeof msg === 'string' ? msg : t('createError', { name: data.name }));
     }
   }

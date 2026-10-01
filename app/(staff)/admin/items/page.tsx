@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/admin/auth-provider';
-import { api } from '@/lib/api';
+import {
+  deleteItem,
+  getAllCategories,
+  getAllItems,
+  reorderItems,
+  setItemAvailability,
+  setItemFeatured,
+} from '@/service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
@@ -36,13 +43,11 @@ export default function ItemsPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   async function getItems() {
-    const res = await api.get('/api/items', { params: { tenantId } });
-    setItems(res.data);
+    setItems(await getAllItems(tenantId));
   }
 
   async function getCategories() {
-    const res = await api.get('/api/categories', { params: { tenantId } });
-    setCategories(res.data);
+    setCategories(await getAllCategories(tenantId));
   }
 
   useEffect(() => {
@@ -95,24 +100,22 @@ export default function ItemsPage() {
       return prev.map((i) => map.get(i.id) ?? i);
     });
 
-    await api.patch('/api/items/reorder', {
-      items: updated.map((i) => ({ id: i.id, displayOrder: i.displayOrder })),
-    });
+    await reorderItems(updated.map((i) => ({ id: i.id, displayOrder: i.displayOrder })));
   }
 
-  async function deleteItem(id: string) {
+  async function removeItem(id: string) {
     if (!confirm(t('confirmDelete'))) return;
-    await api.delete(`/api/items/${id}`);
+    await deleteItem(id);
     getItems();
   }
 
   async function toggleAvailability(item: Item) {
-    await api.patch(`/api/items/${item.id}/availability`, { isAvailable: !item.isAvailable });
+    await setItemAvailability(item.id, !item.isAvailable);
     getItems();
   }
 
   async function toggleFeatured(item: Item) {
-    await api.patch(`/api/items/${item.id}/featured`, { isFeatured: !item.isFeatured });
+    await setItemFeatured(item.id, !item.isFeatured);
     getItems();
   }
 
@@ -196,7 +199,7 @@ export default function ItemsPage() {
                 key={item.id}
                 item={item}
                 onEdit={(i) => router.push(`/admin/items/${i.id}/edit`)}
-                onDelete={deleteItem}
+                onDelete={removeItem}
                 onToggleAvailability={toggleAvailability}
                 onToggleFeatured={toggleFeatured}
                 t={t}

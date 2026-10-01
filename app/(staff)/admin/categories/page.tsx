@@ -2,7 +2,7 @@
 import { useAuth } from '@/components/admin/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { api } from '@/lib/api';
+import { deleteCategory, getAllCategories, reorderCategories } from '@/service';
 import { GripVertical, ImageOff, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -22,10 +22,6 @@ type Category = {
   translations: { locale: string; name: string; description: string | null }[];
 };
 
-type CategoryWithItems = Omit<Category, 'coverImage'> & {
-  items?: { imageUrl: string | null }[];
-};
-
 export default function CategoriesPage() {
   const t = useTranslations('admin');
   const router = useRouter();
@@ -41,8 +37,7 @@ export default function CategoriesPage() {
   async function getCategories() {
     setLoading(true);
     try {
-      const res = await api.get('/api/categories', { params: { tenantId } });
-      const categories = res.data as CategoryWithItems[];
+      const categories = await getAllCategories(tenantId);
       setCats(
         categories.map((c) => ({
           ...c,
@@ -81,14 +76,12 @@ export default function CategoriesPage() {
     const updated = reordered.map((c, idx) => ({ ...c, displayOrder: idx }));
     setCats(updated);
 
-    await api.patch('/api/categories/reorder', {
-      items: updated.map((c) => ({ id: c.id, displayOrder: c.displayOrder })),
-    });
+    await reorderCategories(updated.map((c) => ({ id: c.id, displayOrder: c.displayOrder })));
   }
 
-  async function deleteCategory(id: string) {
+  async function removeCategory(id: string) {
     if (!confirm(t('confirmDelete'))) return;
-    await api.delete(`/api/categories/${id}`);
+    await deleteCategory(id);
     getCategories();
   }
 
@@ -127,7 +120,7 @@ export default function CategoriesPage() {
                   dragDisabled={isFiltering}
                   t={t}
                   onEdit={() => router.push(cat.id + '/edit')}
-                  onDelete={() => deleteCategory(cat.id)}
+                  onDelete={() => removeCategory(cat.id)}
                 />
               ))}
             </div>

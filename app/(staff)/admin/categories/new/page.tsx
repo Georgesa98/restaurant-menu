@@ -1,6 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { createCategory, upsertCategoryTranslation } from '@/service';
 import { useAuth } from '@/components/admin/auth-provider';
 import { toast } from '@/components/ui/toast';
 import { CategoryForm } from '@/components/admin/category-form';
@@ -15,12 +15,12 @@ export default function NewCategoryPage() {
   async function onSubmit(data: CategoryFormInput) {
     if (!user) return;
     try {
-      const res = await api.post('/api/categories', { ...data, tenantId: user.tenantId });
+      const created = await createCategory({ ...data, tenantId: user.tenantId });
       for (const locale of LOCALES) {
         const trName = data.translations[locale].name;
         const trDesc = data.translations[locale].description;
         if (trName) {
-          await api.post(`/api/translations/categories/${res.data.id}/${locale}`, {
+          await upsertCategoryTranslation(created.id, locale, {
             name: trName,
             description: trDesc || null,
           });

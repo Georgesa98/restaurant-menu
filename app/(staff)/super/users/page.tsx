@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api } from '@/lib/api';
+import { ApiError, deleteUser, getAllUsers, resetUserPassword, setUserActive } from '@/service';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,8 +36,7 @@ export default function SuperUsersPage() {
   async function getUsers() {
     setLoading(true);
     try {
-      const res = await api.get('/api/users');
-      setUsers(res.data);
+      setUsers(await getAllUsers());
     } finally {
       setLoading(false);
     }
@@ -47,13 +46,13 @@ export default function SuperUsersPage() {
     getUsers();
   }, []);
 
-  async function deleteUser(row: UserRow) {
+  async function removeUser(row: UserRow) {
     if (!confirm(t('confirmDeleteUser', { name: row.username ?? row.email }))) return;
     try {
-      await api.delete(`/api/users/${row.id}`);
+      await deleteUser(row.id);
       getUsers();
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       alert(typeof msg === 'string' ? msg : t('saveFailed'));
     }
   }
@@ -62,10 +61,10 @@ export default function SuperUsersPage() {
     const next = !row.isActive;
     if (!next && !confirm(t('confirmDeactivate', { name: row.username ?? row.email }))) return;
     try {
-      await api.post(`/api/users/${row.id}/active`, { isActive: next });
+      await setUserActive(row.id, next);
       getUsers();
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       alert(typeof msg === 'string' ? msg : t('saveFailed'));
     }
   }
@@ -74,7 +73,7 @@ export default function SuperUsersPage() {
     if (!resetTarget) return;
     setError('');
     try {
-      await api.post(`/api/users/${resetTarget.id}/password`, { password: data.password });
+      await resetUserPassword(resetTarget.id, data.password);
       toast.add({
         type: 'success',
         description: t('editSuccess', { name: resetTarget.username ?? resetTarget.email }),
@@ -82,7 +81,7 @@ export default function SuperUsersPage() {
       setResetTarget(null);
       resetResetForm();
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       setError(typeof msg === 'string' ? msg : t('saveFailed'));
     }
   }
@@ -97,7 +96,7 @@ export default function SuperUsersPage() {
           setResetTarget(row);
         },
         onToggleActive: toggleActive,
-        onRemove: deleteUser,
+        onRemove: removeUser,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],

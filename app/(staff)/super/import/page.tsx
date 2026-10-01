@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { getAllTenants } from '@/service';
 import { ImportUploader } from '@/components/admin/import-uploader';
 import { Label } from '@/components/ui/label';
 
@@ -14,9 +14,9 @@ export default function SuperImportPage() {
 
   async function getTenants() {
     try {
-      const res = await api.get('/api/tenants');
-      setTenants(res.data);
-      setTenantId((prev) => prev || res.data[0]?.id || '');
+      const data = await getAllTenants();
+      setTenants(data);
+      setTenantId((prev) => prev || data[0]?.id || '');
     } finally {
       setLoading(false);
     }

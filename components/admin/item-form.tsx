@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Upload, X } from 'lucide-react';
-import { api } from '@/lib/api';
+import { uploadImage as uploadImageRequest } from '@/service';
 import { itemSchema, type ItemFormInput } from '@/lib/validations/item';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -66,12 +66,8 @@ export function ItemForm({
   async function uploadImage(file: File, onChange: (url: string) => void) {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await api.post('/api/upload', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      onChange(res.data.url);
+      const { url } = await uploadImageRequest(file);
+      onChange(url);
     } finally {
       setUploading(false);
     }

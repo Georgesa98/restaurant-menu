@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { ApiError, getTenant as fetchTenant, updateTenant } from '@/service';
 import { toast } from '@/components/ui/toast';
 import { TenantForm } from '@/components/admin/tenant-form';
 import { DEFAULT_TOKENS } from '@/lib/tenant-presets';
@@ -36,15 +36,14 @@ export default function EditTenantPage() {
     if (!tenantId) return;
     setIsLoading(true);
     try {
-      const res = await api.get(`/api/tenants/${tenantId}`);
-      const d = res.data;
+      const d = await fetchTenant(Array.isArray(tenantId) ? tenantId[0] : (tenantId as string));
       setInitialValues({
         name: d.name,
         slug: d.slug ?? '',
         domain: d.domain ?? null,
-        plan: d.plan ?? 'FREE',
+        plan: (d.plan as 'FREE' | 'STARTER' | 'PRO') ?? 'FREE',
         isActive: d.isActive ?? true,
-        defaultLocale: d.defaultLocale ?? 'en',
+        defaultLocale: (d.defaultLocale as 'en' | 'ar') ?? 'en',
         description: d.description ?? '',
         address: d.address ?? '',
         phone: d.phone ?? '',
@@ -77,11 +76,11 @@ export default function EditTenantPage() {
     if (!tenantId) return;
     setServerError(null);
     try {
-      await api.put(`/api/tenants/${tenantId}`, toPayload(data));
+      await updateTenant(Array.isArray(tenantId) ? tenantId[0] : (tenantId as string), toPayload(data));
       toast.add({ type: 'success', description: t('editSuccess', { name: data.name }) });
       router.push('/super/tenants');
     } catch (err) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = err instanceof ApiError ? err.message : undefined;
       setServerError(typeof msg === 'string' ? msg : t('editError', { name: data.name }));
     }
   }

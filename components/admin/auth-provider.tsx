@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { getCurrentUser, getSession, signOut as signOutRequest } from '@/service';
 
 type User = {
   id: string;
@@ -34,15 +34,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get('/api/auth/get-session', { withCredentials: true });
-        if (!res.data?.user) {
+        const { user } = await getSession();
+        if (!user) {
           router.replace(`/admin/login`);
           return;
         }
         // Deactivation is enforced server-side (requireSession reads it from
         // the DB), so /api/users/me 403s for deactivated accounts.
-        await api.get('/api/users/me', { withCredentials: true });
-        setUser(res.data.user);
+        await getCurrentUser();
+        setUser(user);
       } catch {
         router.replace(`/admin/login`);
       } finally {
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   async function signOut() {
-    await api.post('/api/auth/sign-out', {}, { withCredentials: true });
+    await signOutRequest();
     setUser(null);
     router.replace(`/admin/login`);
   }

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { ApiError, importMenu } from '@/service';
 import { Button } from '@/components/ui/button';
 import { Upload, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -39,12 +39,9 @@ export function ImportUploader({ tenantId }: { tenantId?: string }) {
       const text = await file.text();
       const json = JSON.parse(text);
 
-      const res = await api.post('/api/import', json, {
-        params: tenantId ? { tenantId } : {},
-      });
-      setResult(res.data);
+      setResult(await importMenu(json, tenantId));
     } catch (e) {
-      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const msg = e instanceof ApiError ? e.message : undefined;
       setError(typeof msg === 'string' ? msg : t('importFailed'));
     } finally {
       setImporting(false);
