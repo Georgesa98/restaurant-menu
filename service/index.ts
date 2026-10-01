@@ -21,6 +21,5 @@ export * from './items';
 export * from './tenants';
 export * from './users';
 export * from './translations';
-export * from './devices';
 export * from './upload';
 export * from './import-export';

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import { Pencil, Palette, Trash2, RefreshCw } from 'lucide-react';
+import { Pencil, Palette, Trash2, RefreshCw, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export type TenantRow = {
@@ -25,6 +25,8 @@ export function getTenantColumns(
   actions: {
     onEdit: (row: TenantRow) => void;
     onTheme: (row: TenantRow) => void;
+    onImport: (row: TenantRow) => void;
+    onExport: (row: TenantRow) => void;
     onRemove: (id: string) => void;
     onRequestSync: (row: TenantRow) => void;
   },
@@ -104,6 +106,24 @@ export function getTenantColumns(
             title={t('customizeTheme')}
           >
             <Palette className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => actions.onImport(row.original)}
+            aria-label={t('import')}
+            title={t('import')}
+          >
+            <Upload className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => actions.onExport(row.original)}
+            aria-label={t('export')}
+            title={t('export')}
+          >
+            <Download className="size-3.5" />
           </Button>
           <Button
             variant="ghost"

@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { deleteTenant, getAllTenants, requestTenantSync } from '@/service';
+import { deleteTenant, exportMenu, getAllTenants, requestTenantSync } from '@/service';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { DataTable } from '@/components/admin/data-table';
-import { FleetPanel } from '@/components/admin/fleet-panel';
+import { TenantImportDialog } from '@/components/admin/tenant-import-dialog';
 import { getTenantColumns, type TenantRow } from '@/components/admin/tenants-columns';
 
 export default function SuperTenantsPage() {
@@ -15,6 +15,7 @@ export default function SuperTenantsPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<TenantRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importRow, setImportRow] = useState<TenantRow | null>(null);
 
   async function getTenants() {
     setLoading(true);
@@ -40,11 +41,28 @@ export default function SuperTenantsPage() {
     getTenants();
   }
 
+  async function exportTenant(row: TenantRow) {
+    try {
+      const blob = await exportMenu(row.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${row.name}-export.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export failed', e);
+      alert('Export failed — check console');
+    }
+  }
+
   const columns = useMemo(
     () =>
       getTenantColumns(t, {
         onEdit: (row) => router.push(`/super/tenants/${row.id}/edit`),
         onTheme: (row) => router.push(`/super/themes/${row.id}`),
+        onImport: setImportRow,
+        onExport: exportTenant,
         onRemove: removeTenant,
         onRequestSync: requestSync,
       }),
@@ -73,7 +91,7 @@ export default function SuperTenantsPage() {
         isLoading={loading}
       />
 
-      <FleetPanel tenants={tenants} />
+      <TenantImportDialog row={importRow} onClose={() => setImportRow(null)} />
     </div>
   );
 }

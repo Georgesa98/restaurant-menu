@@ -86,7 +86,6 @@
     "importErrors": "Errors",
     "export": "Export",
     "exporting": "Exporting...",
-    "exportPickTenant": "Pick which tenant menu to download as JSON",
     "searchItems": "Search items…",
     "missingOnly": "Missing photos",
     "noPhoto": "No photo",
