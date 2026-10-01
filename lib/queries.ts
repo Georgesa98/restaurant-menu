@@ -1,7 +1,7 @@
 import { prisma } from './prisma';
 import type { TenantData, TenantCard } from './types';
 
-function menuInclude() {
+export function menuInclude() {
   return {
     categories: {
       include: {

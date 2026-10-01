@@ -66,7 +66,12 @@ export function CategoryDetail({
     <>
       <MenuTheme tenant={tenant} />
 
-      <main className="menu-page min-h-dvh" dir={isRtl ? 'rtl' : 'ltr'}>
+      <main
+        className="menu-page min-h-dvh"
+        dir={isRtl ? 'rtl' : 'ltr'}
+        data-menu-layout={tenant.menuLayout}
+        data-card-style={tenant.cardStyle}
+      >
         <div className="mx-auto px-4 pt-4" style={{ maxWidth: '900px' }}>
           <div className="flex items-center justify-between">
             <Link
@@ -91,7 +96,7 @@ export function CategoryDetail({
           isRtl={isRtl}
         />
 
-        <div className="mx-auto px-4 py-6 sm:py-8" style={{ maxWidth: '900px' }}>
+        <div className="mx-auto px-4 py-6 @sm:py-8" style={{ maxWidth: '900px' }}>
           {!category || !catTrans ? (
             <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
               {tm('noItems')}
@@ -107,10 +112,7 @@ export function CategoryDetail({
                   {query.trim() ? tm('noResults', { query: query.trim() }) : tm('noItems')}
                 </p>
               ) : (
-                <div
-                  className="menu-items-grid grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                  style={{ gap: '14px' }}
-                >
+                <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
                   {ranked.map(({ item }) => (
                     <ItemCard
                       key={item.id}

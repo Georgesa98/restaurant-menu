@@ -35,3 +35,14 @@ export const tenantSchema = z.object({
 
 export type TenantFormInput = z.infer<typeof tenantSchema>;
 export type ThemeTokensInput = z.infer<typeof themeTokensSchema>;
+
+// Themes page payload: identity + design tokens + the three layout fields.
+export const themeUpdateSchema = themeTokensSchema.extend({
+  name: z.string('required').trim().min(1).max(100),
+  description: optionalText(500),
+  cardStyle: z.enum(['elevated', 'bordered']),
+  menuLayout: z.enum(['auto-fit', 'single']),
+  spacing: z.enum(['comfortable', 'compact']),
+});
+
+export type ThemeUpdateInput = z.infer<typeof themeUpdateSchema>;

@@ -145,3 +145,20 @@ export const RADIUS_OPTIONS = [
 
 export const SHADOW_ON = '0 2px 8px rgba(0,0,0,0.08)';
 export const SHADOW_OFF = 'none';
+
+// Layout fields (stored since the init migration, first wired up by the
+// themes page — see menu-theme.tsx for how each value renders).
+export const CARD_STYLE_OPTIONS = [
+  { value: 'bordered', labelKey: 'cardStyleBordered' },
+  { value: 'elevated', labelKey: 'cardStyleElevated' },
+] as const;
+
+export const MENU_LAYOUT_OPTIONS = [
+  { value: 'auto-fit', labelKey: 'layoutResponsive' },
+  { value: 'single', labelKey: 'layoutStacked' },
+] as const;
+
+export const SPACING_OPTIONS = [
+  { value: 'comfortable', labelKey: 'spacingComfortable' },
+  { value: 'compact', labelKey: 'spacingCompact' },
+] as const;

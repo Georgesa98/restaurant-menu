@@ -67,7 +67,7 @@ export function MenuHero({
                 color: 'var(--primary)',
               }}
             >
-              Valley Star
+              {tenant.name || 'Valley Star'}
             </h1>
           </>
         )}

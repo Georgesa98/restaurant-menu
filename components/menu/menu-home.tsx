@@ -19,16 +19,32 @@ import { MenuOrderFooter } from './menu-order-footer';
  * While searching, a flat ranked item grid replaces the grid (like the
  * Flutter SearchResultsSliver).
  */
-export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: string }) {
+export function MenuHome({
+  tenant,
+  locale,
+  themeScope,
+  preview = false,
+}: {
+  tenant: TenantData;
+  locale: string;
+  themeScope?: string;
+  /**
+   * Theme-studio preview mode: no client cart state (nothing is loaded from
+   * or written to localStorage) and no order footer/sheet, so customer order
+   * UI can never leak into the admin preview.
+   */
+  preview?: boolean;
+}) {
   const tm = useTranslations('menu');
   const [query, setQuery] = useState('');
   const { init, ensureVariantDefaults } = useCartStore();
   const isRtl = locale === 'ar';
 
   useEffect(() => {
+    if (preview) return;
     init(tenant.slug);
     ensureVariantDefaults(tenant.categories);
-  }, [tenant.slug, tenant.categories, init, ensureVariantDefaults]);
+  }, [tenant.slug, tenant.categories, init, ensureVariantDefaults, preview]);
 
   const categories = useMemo(
     () => tenant.categories.filter((c) => c.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
@@ -69,9 +85,14 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
 
   return (
     <>
-      <MenuTheme tenant={tenant} />
+      <MenuTheme tenant={tenant} scope={themeScope} />
 
-      <main className="menu-page min-h-dvh" dir={isRtl ? 'rtl' : 'ltr'}>
+      <main
+        className="menu-page min-h-dvh"
+        dir={isRtl ? 'rtl' : 'ltr'}
+        data-menu-layout={tenant.menuLayout}
+        data-card-style={tenant.cardStyle}
+      >
         <MenuHero
           tenant={tenant}
           locale={locale}
@@ -83,17 +104,14 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
           notice={tm('orderNotice')}
         />
 
-        <div className="mx-auto px-4 py-6 sm:py-8" style={{ maxWidth: '900px' }}>
+        <div className="mx-auto px-4 py-6 @sm:py-8" style={{ maxWidth: '900px' }}>
           {searching ? (
             searchResults.length === 0 ? (
               <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
                 {tm('noResults', { query: query.trim() })}
               </p>
             ) : (
-              <div
-                className="menu-items-grid grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                style={{ gap: '14px' }}
-              >
+              <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
                 {searchResults.map(({ item, categorySlug }) => (
                   <ItemCard
                     key={item.id}
@@ -107,16 +125,13 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
               </div>
             )
           ) : (
-            <div className="menu-categories-container space-y-12">
+            <div className="menu-categories-container">
               {featuredItems.length > 0 && (
                 <section className="menu-category">
                   <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
                     <h2 className="menu-section-header">⭐ {tm('featuredTitle')}</h2>
                   </div>
-                  <div
-                    className="menu-items-grid grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                    style={{ gap: '14px' }}
-                  >
+                  <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
                     {featuredItems.map(({ item, categorySlug }) => (
                       <ItemCard
                         key={item.id}
@@ -175,7 +190,7 @@ export function MenuHome({ tenant, locale }: { tenant: TenantData; locale: strin
           )}
         </div>
 
-        <MenuOrderFooter tenant={tenant} locale={locale} tm={tm} />
+        {!preview && <MenuOrderFooter tenant={tenant} locale={locale} tm={tm} />}
       </main>
     </>
   );

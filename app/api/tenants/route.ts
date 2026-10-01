@@ -48,8 +48,10 @@ export async function POST(req: Request) {
       borderRadiusMd: body.borderRadiusMd ?? '8px',
       borderRadiusLg: body.borderRadiusLg ?? '16px',
       shadow: body.shadow ?? '0 2px 8px rgba(0,0,0,0.08)',
-      cardStyle: body.cardStyle ?? 'elevated',
-      menuLayout: body.menuLayout ?? 'single',
+      // Layout fields now render (menu-theme.tsx): default to the same
+      // look as the seeded demo tenant.
+      cardStyle: body.cardStyle ?? 'bordered',
+      menuLayout: body.menuLayout ?? 'auto-fit',
       spacing: body.spacing ?? 'comfortable',
       logoUrl: body.logoUrl ?? null,
       coverUrl: body.coverUrl ?? null,

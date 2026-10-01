@@ -34,7 +34,10 @@ export function MenuOrderFooter({
           className="menu-counter w-full text-left"
           aria-label={tm('yourOrder')}
         >
-          <div className="mx-auto px-4 py-3 sm:py-3.5 flex items-center justify-between" style={{ maxWidth: '900px' }}>
+          <div
+            className="mx-auto px-4 py-3 @sm:py-3.5 flex items-center justify-between"
+            style={{ maxWidth: '900px' }}
+          >
             <div>
               <div className="menu-counter-label">{tm('itemCount', { count: totalItems })}</div>
               <div className="menu-counter-sub">{tm('tapToAdd')}</div>

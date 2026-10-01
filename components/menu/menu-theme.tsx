@@ -6,11 +6,16 @@ import type { TenantData } from '@/lib/types';
  * Per-tenant CSS vars + shared menu styles. Rendered by both the category
  * landing and the category detail page (mirrors the Flutter kiosk palette:
  * hairline #E4DDCF, image wash #EDE7DB, 16px cards).
+ *
+ * `scope` prefixes the custom-property block: the public pages keep the
+ * default `:root`, while the admin themes preview passes `#theme-preview`
+ * so the vars can never recolor the admin shell.
  */
-export function MenuTheme({ tenant }: { tenant: TenantData }) {
+export function MenuTheme({ tenant, scope = ':root' }: { tenant: TenantData; scope?: string }) {
+  const compact = tenant.spacing === 'compact';
   return (
     <style>{`
-      :root {
+      ${scope} {
         --primary: ${tenant.primaryColor};
         --secondary: ${tenant.secondaryColor};
         --accent: ${tenant.accentColor};
@@ -26,12 +31,65 @@ export function MenuTheme({ tenant }: { tenant: TenantData }) {
         --radius-md: ${tenant.borderRadiusMd};
         --radius-lg: ${tenant.borderRadiusLg};
         --shadow: ${tenant.shadow};
+        --space: ${compact ? '9px' : '14px'};
+        --space-categories: ${compact ? '9px' : '14px'};
+        --space-section: ${compact ? '28px' : '48px'};
+      }
+
+      .menu-items-grid {
+        gap: var(--space);
+      }
+
+      .category-grid {
+        gap: var(--space-categories);
+      }
+
+      .menu-categories-container > * + * {
+        margin-top: var(--space-section);
+      }
+
+      [data-card-style="elevated"] .menu-card,
+      [data-card-style="elevated"] .category-card {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+
+      [data-menu-layout="single"] .menu-items-grid {
+        grid-template-columns: 1fr;
+      }
+
+      [data-menu-layout="single"] .menu-items-grid > * {
+        width: 100%;
+        max-width: 480px;
+        margin-inline: auto;
+      }
+
+      [data-menu-layout="single"] .menu-card {
+        flex-direction: column;
+        padding: 0;
+        gap: 0;
+      }
+
+      [data-menu-layout="single"] .menu-card-image-wrap {
+        width: auto;
+        height: auto;
+        flex-shrink: 0;
+        border-radius: 0;
+        aspect-ratio: 4 / 3;
+      }
+
+      [data-menu-layout="single"] .menu-card-body {
+        padding: 12px 14px 14px;
+        min-width: auto;
       }
 
       .menu-page {
         font-family: var(--font-body);
         background: var(--bg);
         color: var(--text);
+        /* Layout breakpoints below are container queries so the admin
+           themes preview (a 390px frame inside a desktop viewport)
+           renders the same styles as a real phone. */
+        container-type: inline-size;
       }
 
       .menu-card {
@@ -298,7 +356,7 @@ export function MenuTheme({ tenant }: { tenant: TenantData }) {
         color: #fff;
       }
 
-      @media (max-width: 479px) {
+      @container (max-width: 479px) {
         .menu-card {
           flex-direction: row;
           padding: 10px;
@@ -335,7 +393,7 @@ export function MenuTheme({ tenant }: { tenant: TenantData }) {
         }
 
         .menu-categories-container > * + * {
-          margin-top: 10px;
+          margin-top: ${compact ? '8px' : '10px'};
         }
 
         .menu-section-header {
@@ -348,7 +406,7 @@ export function MenuTheme({ tenant }: { tenant: TenantData }) {
         }
 
         .menu-items-grid {
-          gap: 10px;
+          gap: ${compact ? '7px' : '10px'};
         }
 
         .variant-chips {
@@ -381,7 +439,7 @@ export function MenuTheme({ tenant }: { tenant: TenantData }) {
         }
       }
 
-      @media (min-width: 480px) {
+      @container (min-width: 480px) {
         .menu-item-name {
           font-size: 14px;
         }
