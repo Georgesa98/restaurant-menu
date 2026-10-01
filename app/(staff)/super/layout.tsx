@@ -12,7 +12,7 @@ export default function SuperBranchLayout({ children }: { children: React.ReactN
 
         <SidebarInset>
           <AppSidebarTitle />
-          <main className="mx-auto w-3xl my-4">{children}</main>
+          <main className="mx-auto my-4 w-full max-w-3xl min-w-0 overflow-x-clip has-[.theme-wide]:max-w-6xl has-[.theme-wide]:px-4">{children}</main>
         </SidebarInset>
       </SidebarProvider>
     </RequireRole>

@@ -15,9 +15,9 @@ function useLocaleSwitcher() {
 
   function switchLocale() {
     startTransition(async () => {
+      // The server render owns <html lang>/<html dir> from the locale cookie;
+      // just persist and refresh to avoid a hydration flash.
       await setUserLocale(otherLocale);
-      document.documentElement.lang = otherLocale;
-      document.documentElement.dir = otherLocale === 'ar' ? 'rtl' : 'ltr';
       router.refresh();
     });
   }
