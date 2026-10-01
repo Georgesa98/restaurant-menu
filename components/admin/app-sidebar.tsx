@@ -25,7 +25,7 @@ export function AppSidebar() {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const isSuper = pathname.startsWith('/super');
-  const importHref = isSuper ? '/super/import' : '/admin/import';
+  const importHref = '/super/import';
   const navItems = isSuper
     ? [
         {
@@ -98,21 +98,25 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="gap-1 px-3 pb-3">
         <SidebarMenu className="gap-1">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={pathname.startsWith(importHref)}
-              onClick={() => router.push(importHref)}
-              className={cn(
-                'relative rounded-lg transition-colors',
-                'before:absolute before:start-0 before:top-2 before:bottom-2 before:w-1 before:rounded-e-full before:bg-primary before:opacity-0 before:transition-opacity',
-                pathname.startsWith(importHref) && 'bg-sidebar-accent font-medium before:opacity-100',
-              )}
-            >
-              <Import />
-              <span>{t('import')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <ExportButton />
+          {isSuper && (
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={pathname.startsWith(importHref)}
+                  onClick={() => router.push(importHref)}
+                  className={cn(
+                    'relative rounded-lg transition-colors',
+                    'before:absolute before:start-0 before:top-2 before:bottom-2 before:w-1 before:rounded-e-full before:bg-primary before:opacity-0 before:transition-opacity',
+                    pathname.startsWith(importHref) && 'bg-sidebar-accent font-medium before:opacity-100',
+                  )}
+                >
+                  <Import />
+                  <span>{t('import')}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <ExportButton />
+            </>
+          )}
           <LocaleToggleButton />
           <SidebarSeparator className="my-1" />
           <SidebarMenuItem>

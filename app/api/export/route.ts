@@ -1,13 +1,15 @@
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/require-session';
+import { requireSuper } from '@/lib/user-guards';
 
 export async function GET(req: Request) {
   const r = await requireSession();
   if ('response' in r) return r.response;
-  const { userTenantId, userRole } = r.session;
+  const denied = requireSuper(r.session);
+  if (denied) return denied;
 
   const tenantId = new URL(req.url).searchParams.get('tenantId');
-  const effectiveTenantId = userRole === 'SUPER_ADMIN' ? tenantId : userTenantId;
+  const effectiveTenantId = tenantId;
   if (!effectiveTenantId) return Response.json({ error: 'tenantId required' }, { status: 400 });
 
   const categories = await prisma.category.findMany({

@@ -2,10 +2,10 @@ import { api } from '@/lib/api';
 import { toApiError } from './errors';
 import type { ImportResult } from './types';
 
-export async function importMenu(json: unknown, tenantId?: string): Promise<ImportResult> {
+export async function importMenu(json: unknown, tenantId: string): Promise<ImportResult> {
   try {
     const res = await api.post('/api/import', json, {
-      params: tenantId ? { tenantId } : {},
+      params: { tenantId },
     });
     return res.data as ImportResult;
   } catch (err) {
@@ -13,12 +13,10 @@ export async function importMenu(json: unknown, tenantId?: string): Promise<Impo
   }
 }
 
-export async function exportMenu(tenantId?: string): Promise<Blob> {
+export async function exportMenu(tenantId: string): Promise<Blob> {
   try {
-    const params: Record<string, string> = {};
-    if (tenantId) params.tenantId = tenantId;
     const res = await api.get('/api/export', {
-      params,
+      params: { tenantId },
       responseType: 'blob',
       headers: { Accept: 'application/json' },
     });

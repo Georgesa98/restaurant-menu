@@ -11,7 +11,7 @@ type ImportResult = {
   errors?: string[];
 } | null;
 
-export function ImportUploader({ tenantId }: { tenantId?: string }) {
+export function ImportUploader({ tenantId }: { tenantId: string }) {
   const t = useTranslations('admin');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>('');
