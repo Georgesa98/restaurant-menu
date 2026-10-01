@@ -22,14 +22,14 @@ const points = [
 export function Showcase() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-16">
-      <p className="mb-2 text-center text-xs font-bold tracking-wide text-muted-foreground">صفحتك العامة</p>
+      <p className="mb-2 text-center text-sm font-bold tracking-wide text-muted-foreground">صفحتك العامة</p>
       <h2
         className="mx-auto mb-4 max-w-2xl text-center text-3xl font-bold leading-snug sm:text-4xl"
         style={{ fontFamily: 'var(--font-arabic)' }}
       >
         موقع كامل باسم مطعمك، مو بس صورة
       </h2>
-      <p className="mx-auto mb-10 max-w-xl text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
+      <p className="mx-auto mb-10 max-w-xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg">
         مو بس لوحة تحكم إلك — زباينك بيشوفوا موقع باسمك فيه كل شي بيحتاجوه ليطلبوا.
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -42,7 +42,7 @@ export function Showcase() {
               <h3 className="mb-1 font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
                 {p.title}
               </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{p.body}</p>
+              <p className="text-base leading-relaxed text-muted-foreground">{p.body}</p>
             </div>
           </div>
         ))}

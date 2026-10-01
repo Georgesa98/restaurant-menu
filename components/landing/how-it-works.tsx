@@ -25,7 +25,7 @@ function Steps({ steps }: { steps: { title: string; body: string }[] }) {
             <h3 className="mb-1 font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
               {s.title}
             </h3>
-            <p className="text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+            <p className="text-base leading-relaxed text-muted-foreground">{s.body}</p>
           </div>
         </li>
       ))}
@@ -37,7 +37,7 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="border-t border-border bg-card/50">
       <div className="mx-auto max-w-5xl px-4 py-16">
-        <p className="mb-2 text-center text-xs font-bold tracking-wide text-muted-foreground">كيف بيشتغل</p>
+        <p className="mb-2 text-center text-sm font-bold tracking-wide text-muted-foreground">كيف بيشتغل</p>
         <h2
           className="mx-auto mb-10 max-w-2xl text-center text-3xl font-bold leading-snug sm:text-4xl"
           style={{ fontFamily: 'var(--font-arabic)' }}

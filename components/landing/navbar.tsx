@@ -17,7 +17,7 @@ export function Navbar() {
           </span>
           سفرة
         </a>
-        <nav className="hidden items-center gap-6 text-sm md:flex">
+        <nav className="hidden items-center gap-6 text-base md:flex">
           {links.map((l) => (
             <a key={l.href} href={l.href} className="text-foreground/70 transition-colors hover:text-foreground">
               {l.label}
@@ -29,17 +29,17 @@ export function Navbar() {
             href={WHATSAPP_LINK}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+            className="rounded-full bg-primary px-4 py-2 text-base font-bold text-primary-foreground transition-opacity hover:opacity-90"
           >
             احكينا واتساب
           </a>
           <details className="relative md:hidden">
-            <summary className="cursor-pointer list-none rounded-lg border border-border px-3 py-2 text-sm [&::-webkit-details-marker]:hidden">
+            <summary             className="cursor-pointer list-none rounded-lg border border-border px-3 py-2 text-base [&::-webkit-details-marker]:hidden">
               القائمة
             </summary>
             <nav className="absolute left-0 top-12 flex w-44 flex-col gap-1 rounded-xl border border-border bg-card p-2 shadow-lg">
               {links.map((l) => (
-                <a key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-sm hover:bg-muted">
+                <a key={l.href} href={l.href} className="rounded-lg px-3 py-2 text-base hover:bg-muted">
                   {l.label}
                 </a>
               ))}

@@ -37,7 +37,7 @@ export function Features() {
   return (
     <section id="features" className="border-t border-border bg-card/50">
       <div className="mx-auto max-w-5xl px-4 py-16">
-        <p className="mb-2 text-center text-xs font-bold tracking-wide text-muted-foreground">المميزات</p>
+        <p className="mb-2 text-center text-sm font-bold tracking-wide text-muted-foreground">المميزات</p>
         <h2
           className="mx-auto mb-10 max-w-2xl text-center text-3xl font-bold leading-snug sm:text-4xl"
           style={{ fontFamily: 'var(--font-arabic)' }}
@@ -48,10 +48,10 @@ export function Features() {
           {features.map((f) => (
             <div key={f.title} className="rounded-2xl border border-border bg-card p-6">
               <f.icon className="mb-4 size-7 text-primary" strokeWidth={1.8} />
-              <h3 className="mb-2 text-lg font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
+              <h3 className="mb-2 text-xl font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
                 {f.title}
               </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+              <p className="text-base leading-relaxed text-muted-foreground">{f.body}</p>
             </div>
           ))}
         </div>

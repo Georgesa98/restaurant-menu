@@ -29,7 +29,7 @@ export function Faq() {
   return (
     <section id="faq" className="border-t border-border bg-card/50">
       <div className="mx-auto max-w-3xl px-4 py-16">
-        <p className="mb-2 text-center text-xs font-bold tracking-wide text-muted-foreground">
+        <p className="mb-2 text-center text-sm font-bold tracking-wide text-muted-foreground">
           أسئلة شائعة
         </p>
         <h2
@@ -41,10 +41,10 @@ export function Faq() {
         <div className="space-y-3">
           {faqs.map((f) => (
             <details key={f.q} className="group rounded-2xl border border-border bg-card px-5 py-4">
-              <summary className="cursor-pointer list-none font-bold [&::-webkit-details-marker]:hidden">
+              <summary className="cursor-pointer list-none text-lg font-bold [&::-webkit-details-marker]:hidden">
                 {f.q}
               </summary>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.a}</p>
+              <p className="mt-2 text-base leading-relaxed text-muted-foreground">{f.a}</p>
             </details>
           ))}
         </div>
