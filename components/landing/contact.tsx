@@ -42,12 +42,12 @@ export function Footer() {
     <footer className="border-t border-border">
       <div className="mx-auto max-w-5xl px-4 py-10 text-center">
         <p className="font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
-          نظام المنيو
+          سفرة
         </p>
         <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
           منيو إلكتروني معمول للمطاعم والكافيهات.
         </p>
-        <p className="mt-6 text-xs text-muted-foreground">© 2026 نظام المنيو — جميع الحقوق محفوظة.</p>
+        <p className="mt-6 text-xs text-muted-foreground">© 2026 سفرة — جميع الحقوق محفوظة.</p>
         <p className="mt-1 text-xs text-muted-foreground">صُنع ويُدار بواسطة جورج صليبي</p>
       </div>
     </footer>

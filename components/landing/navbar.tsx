@@ -1,9 +1,9 @@
+import Image from 'next/image';
 import { WHATSAPP_LINK } from './config';
 
 const links = [
   { href: '#features', label: 'المميزات' },
   { href: '#how-it-works', label: 'كيف بيشتغل' },
-  { href: '#pricing', label: 'الأسعار' },
   { href: '#contact', label: 'تواصل معنا' },
 ];
 
@@ -11,8 +11,11 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <a href="#" className="text-lg font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
-          نظام المنيو
+        <a href="#" className="flex items-center gap-2 text-lg font-bold" style={{ fontFamily: 'var(--font-arabic)' }}>
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary p-1">
+            <Image src="/logo.svg" alt="سفرة" width={20} height={20} className="size-full" />
+          </span>
+          سفرة
         </a>
         <nav className="hidden items-center gap-6 text-sm md:flex">
           {links.map((l) => (

@@ -6,7 +6,6 @@ import { Hero } from '@/components/landing/hero';
 import { Features } from '@/components/landing/features';
 import { Showcase } from '@/components/landing/showcase';
 import { HowItWorks } from '@/components/landing/how-it-works';
-import { Pricing } from '@/components/landing/pricing';
 import { Faq } from '@/components/landing/faq';
 import { Contact, Footer } from '@/components/landing/contact';
 
@@ -15,7 +14,7 @@ import { Contact, Footer } from '@/components/landing/contact';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'نظام المنيو | منيو إلكتروني لمطعمك',
+  title: 'سفرة | منيو إلكتروني لمطعمك',
   description: 'صفحة منيو باسم مطعمك، بالعربي والإنجليزي، بتتحدث لحالا. احكينا واتساب.',
 };
 
@@ -45,7 +44,6 @@ export default async function Home() {
         <Features />
         <Showcase />
         <HowItWorks />
-        <Pricing />
         <Faq />
         <Contact />
       </main>
