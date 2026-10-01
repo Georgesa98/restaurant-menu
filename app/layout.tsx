@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Playfair_Display, Jost, Alex_Brush, Amiri } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
@@ -35,8 +35,16 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: 'Restaurant Menu',
-  description: 'Digital menus for restaurants',
+  title: {
+    template: '%s · Sufra',
+    default: 'Sufra · سفرة',
+  },
+  description: 'Digital menus for restaurants — Sufra',
+  applicationName: 'Sufra',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#c8412f',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

@@ -12,6 +12,7 @@ import {
   SidebarSeparator,
 } from '../ui/sidebar';
 import { useLocale, useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { LocaleToggleButton } from './locale-toggle-button';
@@ -58,8 +59,8 @@ export function AppSidebar() {
     <Sidebar variant="inset" side={locale === 'ar' ? 'right' : 'left'}>
       <SidebarHeader className="px-3 pt-3">
         <div className="flex items-center gap-2.5 rounded-xl bg-sidebar-accent/50 p-2.5 ring-1 ring-sidebar-border">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <UtensilsCrossed className="size-4.5" />
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary p-1.5">
+            <Image src="/logo.svg" alt="Sufra" width={24} height={24} className="size-full" />
           </div>
           <div className="min-w-0 leading-tight">
             <p className="truncate text-sm font-semibold">

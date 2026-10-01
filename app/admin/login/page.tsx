@@ -2,13 +2,13 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { ApiError, getSession, signInWithUsername } from '@/service';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UtensilsCrossed } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('');
@@ -65,11 +65,11 @@ export default function AdminLoginPage() {
     <div className="min-h-dvh bg-gradient-to-b from-background to-muted/60 px-4 py-10">
       <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-sm flex-col justify-center">
         <div className="mb-8 space-y-3 text-center">
-          <div className="mx-auto flex size-13 w-fit items-center justify-center rounded-2xl bg-primary p-3 text-primary-foreground shadow-lg shadow-primary/25">
-            <UtensilsCrossed className="size-7" strokeWidth={1.8} />
+          <div className="mx-auto flex size-13 w-fit items-center justify-center rounded-2xl bg-primary p-2.5 shadow-lg shadow-primary/25">
+            <Image src="/logo.svg" alt="Sufra" width={32} height={32} className="size-full" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">MenuHost</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Sufra · سفرة</h1>
             <p className="mt-1 text-sm text-muted-foreground">Restaurant menu management</p>
           </div>
         </div>
