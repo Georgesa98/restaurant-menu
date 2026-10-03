@@ -3,6 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ImageOff, Pencil, Pin, Trash2, GripVertical } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import type { Item } from '../../types/item.types';
 
@@ -17,6 +18,8 @@ export function ItemCard({
   onDelete,
   onToggleAvailability,
   onToggleFeatured,
+  selected,
+  onToggleSelect,
   t,
   locale,
 }: {
@@ -25,6 +28,8 @@ export function ItemCard({
   onDelete: (id: string) => void;
   onToggleAvailability: (item: Item) => void;
   onToggleFeatured: (item: Item) => void;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
   t: (key: string) => string;
   locale: string;
 }) {
@@ -54,6 +59,11 @@ export function ItemCard({
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+            aria-label={t('selectItem')}
+          />
           <button
             {...attributes}
             {...listeners}

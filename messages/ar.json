@@ -221,6 +221,16 @@
     "qrCopyFailed": "فشل نسخ الرابط",
     "qrDownload": "تنزيل PNG",
     "qrCustomDomain": "يستخدم النطاق المخصص",
-    "qrAppDomain": "يستخدم نطاق التطبيق"
+    "qrAppDomain": "يستخدم نطاق التطبيق",
+    "selectAll": "تحديد الكل",
+    "selectedCount": "تم تحديد {count}",
+    "clearSelection": "إلغاء",
+    "deleteSelected": "حذف",
+    "markAvailable": "تعيين متاح",
+    "markUnavailable": "تعيين غير متاح",
+    "confirmDeleteSelected": "حذف {count} عناصر؟ لا يمكن التراجع.",
+    "deleteFailed": "فشل حذف العناصر",
+    "availabilityFailed": "فشل تحديث التوفر",
+    "selectItem": "تحديد العنصر"
   }
 }

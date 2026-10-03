@@ -221,6 +221,16 @@
     "qrCopyFailed": "Failed to copy link",
     "qrDownload": "Download PNG",
     "qrCustomDomain": "Using your custom domain",
-    "qrAppDomain": "Using the app domain"
+    "qrAppDomain": "Using the app domain",
+    "selectAll": "Select all",
+    "selectedCount": "{count} selected",
+    "clearSelection": "Clear",
+    "deleteSelected": "Delete",
+    "markAvailable": "Mark available",
+    "markUnavailable": "Mark unavailable",
+    "confirmDeleteSelected": "Delete {count} items? This cannot be undone.",
+    "deleteFailed": "Failed to delete items",
+    "availabilityFailed": "Failed to update availability",
+    "selectItem": "Select item"
   }
 }

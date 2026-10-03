@@ -6,13 +6,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/admin/auth-provider';
 import {
   deleteItem,
+  deleteItems,
   getAllCategories,
   getAllItems,
   reorderItems,
   setItemAvailability,
+  setItemsAvailability,
   setItemFeatured,
 } from '@/service';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { PagerControls } from '@/components/admin/data-table';
@@ -32,6 +35,7 @@ export default function ItemsPage() {
   const [search, setSearch] = useState('');
   const [missingOnly, setMissingOnly] = useState(false);
   const [page, setPage] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pageSize, setPageSize] = useState(() => {
     if (typeof window === 'undefined') return 12;
     const n = Number(localStorage.getItem('items-page-size'));
@@ -80,6 +84,46 @@ export default function ItemsPage() {
 
   function resetPage() {
     setPage(0);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every((i) => selectedIds.has(i.id));
+
+  function toggleSelectAll() {
+    setSelectedIds(allFilteredSelected ? new Set() : new Set(filtered.map((i) => i.id)));
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    if (!ids.length || !confirm(t('confirmDeleteSelected', { count: ids.length }))) return;
+    try {
+      await deleteItems(ids);
+      setSelectedIds(new Set());
+      await getItems();
+    } catch {
+      alert(t('deleteFailed'));
+    }
+  }
+
+  async function bulkSetAvailability(isAvailable: boolean) {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    try {
+      await setItemsAvailability(ids, isAvailable);
+      setSelectedIds(new Set());
+      await getItems();
+    } catch {
+      alert(t('availabilityFailed'));
+    }
   }
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -136,6 +180,15 @@ export default function ItemsPage() {
       </div>
 
       <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={allFilteredSelected}
+            aria-checked={selectedIds.size > 0 && !allFilteredSelected ? 'mixed' : allFilteredSelected}
+            onCheckedChange={toggleSelectAll}
+            aria-label={t('selectAll')}
+          />
+          <span className="text-xs text-muted-foreground">{t('selectAll')}</span>
+        </div>
         <Input
           placeholder={t('searchItems')}
           value={search}
@@ -191,6 +244,24 @@ export default function ItemsPage() {
         )}
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-card rounded-xl ring-1 ring-foreground/5">
+          <span className="text-sm font-medium me-2">{t('selectedCount', { count: selectedIds.size })}</span>
+          <Button variant="outline" size="sm" onClick={() => bulkSetAvailability(true)}>
+            {t('markAvailable')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => bulkSetAvailability(false)}>
+            {t('markUnavailable')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={bulkDelete}>
+            {t('deleteSelected')}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+            {t('clearSelection')}
+          </Button>
+        </div>
+      )}
+
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={paged.map((i) => i.id)} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -202,6 +273,8 @@ export default function ItemsPage() {
                 onDelete={removeItem}
                 onToggleAvailability={toggleAvailability}
                 onToggleFeatured={toggleFeatured}
+                selected={selectedIds.has(item.id)}
+                onToggleSelect={toggleSelect}
                 t={t}
                 locale={locale}
               />

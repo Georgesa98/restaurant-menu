@@ -85,3 +85,19 @@ export async function setItemFeatured(id: string, isFeatured: boolean): Promise<
     throw toApiError(err);
   }
 }
+
+export async function deleteItems(ids: string[]): Promise<void> {
+  try {
+    await api.delete('/api/items', { data: { ids } });
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function setItemsAvailability(ids: string[], isAvailable: boolean): Promise<void> {
+  try {
+    await api.patch('/api/items/availability', { ids, isAvailable });
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
