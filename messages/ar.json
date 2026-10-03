@@ -214,6 +214,13 @@
     "preview": "معاينة",
     "previewHint": "معاينة مباشرة لقائمتك — مرّر داخل الهاتف",
     "customizeTheme": "تخصيص الثيم",
-    "back": "رجوع"
+    "back": "رجوع",
+    "qrTitle": "رمز QR للقائمة",
+    "qrCopy": "نسخ الرابط",
+    "qrCopied": "تم نسخ الرابط",
+    "qrCopyFailed": "فشل نسخ الرابط",
+    "qrDownload": "تنزيل PNG",
+    "qrCustomDomain": "يستخدم النطاق المخصص",
+    "qrAppDomain": "يستخدم نطاق التطبيق"
   }
 }

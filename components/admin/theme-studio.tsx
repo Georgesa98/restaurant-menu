@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Search, Star, X } from 'lucide-react';
 import { MenuHome } from '@/components/menu/menu-home';
+import { MenuQrCode } from '@/components/admin/menu-qr-code';
 import { resolveTranslation, type MenuItem } from '@/components/menu/menu-helpers';
 import { isLiveFeatured } from '@/lib/search';
 import {
@@ -572,6 +573,8 @@ export function ThemeStudio({ tenantId }: { tenantId: string }) {
               )}
             </div>
           </Section>
+
+          <MenuQrCode slug={draft.slug} domain={draft.domain} />
         </div>
 
         <div className="space-y-2 w-full max-w-[390px] mx-auto lg:sticky lg:top-20 lg:self-start">

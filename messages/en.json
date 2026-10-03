@@ -214,6 +214,13 @@
     "preview": "Preview",
     "previewHint": "Live preview of your menu — scroll inside the phone",
     "customizeTheme": "Customize theme",
-    "back": "Go back"
+    "back": "Go back",
+    "qrTitle": "Menu QR code",
+    "qrCopy": "Copy link",
+    "qrCopied": "Link copied",
+    "qrCopyFailed": "Failed to copy link",
+    "qrDownload": "Download PNG",
+    "qrCustomDomain": "Using your custom domain",
+    "qrAppDomain": "Using the app domain"
   }
 }
