@@ -8,7 +8,7 @@ const EN_CATEGORY_NAMES: Record<string, string> = {
   'مشروبات باردة': 'Cold Drinks',
   غربي: 'Western',
   كريبات: 'Crepes',
-  شرقي: 'Eastern',
+  شرقي: 'Oriental',
   'مشروبات كحولية': 'Alcoholic Drinks',
   بيتزا: 'Pizza',
   باريستا: 'Barista',
@@ -16,7 +16,7 @@ const EN_CATEGORY_NAMES: Record<string, string> = {
   'مقبلات ساخنة': 'Hot Appetizers',
   سلطات: 'Salads',
   باستا: 'Pasta',
-  اراكيل: 'Shisha',
+  اراكيل: 'Hookah',
 };
 
 function slugify(text: string): string {
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
       const category = await prisma.category.upsert({
         where: { tenantId_slug: { tenantId: effectiveTenantId, slug: catSlug } },
-        update: { name: enName, displayOrder: cat.order ?? 0 },
+        update: { name: enName, displayOrder: cat.order ?? 0, isDeleted: false, isActive: true },
         create: {
           tenantId: effectiveTenantId,
           name: enName,
@@ -97,6 +97,7 @@ export async function POST(req: Request) {
               isFeatured: item.isFeatured ?? false,
               featuredUntil: item.featuredUntil ?? null,
               categoryId: category.id,
+              isDeleted: false,
               ...(hasVariants
                 ? {
                     variants: {

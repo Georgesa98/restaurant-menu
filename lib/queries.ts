@@ -4,16 +4,20 @@ import type { TenantData, TenantCard } from './types';
 export function menuInclude() {
   return {
     categories: {
+      where: { isActive: true, isDeleted: false },
+      orderBy: { displayOrder: 'asc' as const },
       include: {
           items: {
+            where: { isDeleted: false },
+            orderBy: { displayOrder: 'asc' as const },
             include: {
               // All locales: the menu resolves the current one client-side
               // and searches across both (see lib/search.ts).
-              translations: { orderBy: { locale: 'asc' } },
-              variants: { orderBy: { sortOrder: 'asc' } },
+              translations: { orderBy: { locale: 'asc' as const } },
+              variants: { where: { isDeleted: false }, orderBy: { sortOrder: 'asc' as const } },
             },
           },
-        translations: { orderBy: { locale: 'asc' } },
+        translations: { orderBy: { locale: 'asc' as const } },
       },
     },
   } as const;
