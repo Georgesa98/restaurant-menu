@@ -10,7 +10,8 @@ import { resolveTranslation } from './menu-helpers';
 import { useCartStore } from '@/lib/stores/cart-store';
 import { MenuTheme } from './menu-theme';
 import { MenuSearchField, ViewingNotice } from './menu-hero';
-import { ItemCard } from './item-card';
+import { MenuItemView } from './menu-item-view';
+import { CategoryList } from './category-list';
 import { MenuOrderFooter } from './menu-order-footer';
 import { LanguageSwitcher } from './language-switcher';
 
@@ -37,6 +38,11 @@ export function CategoryDetail({
     init(tenant.slug);
     ensureVariantDefaults(tenant.categories);
   }, [tenant.slug, tenant.categories, init, ensureVariantDefaults]);
+
+  const categories = useMemo(
+    () => tenant.categories.filter((c) => c.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
+    [tenant.categories],
+  );
 
   const category = useMemo(
     () => tenant.categories.find((c) => c.slug === categorySlug),
@@ -102,9 +108,22 @@ export function CategoryDetail({
               {tm('noItems')}
             </p>
           ) : (
-            <section className="menu-category">
+            <div className="menu-browse">
+              <div className="category-list-sidebar">
+                <CategoryList
+                  categories={categories}
+                  locale={locale}
+                  isRtl={isRtl}
+                  tenantSlug={tenant.slug}
+                  selectedSlug={category.slug}
+                  allLabel={tm('all')}
+                  countLabel={(count) => tm('dishesCount', { count })}
+                />
+              </div>
+              <section className="menu-category menu-browse-items">
               <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
                 <h2 className="menu-section-header">{catTrans.name}</h2>
+                {tenant.itemStyle === 'text' && <p className="menu-items-currency">{tm('pricesIn')}</p>}
               </div>
 
               {ranked.length === 0 ? (
@@ -114,18 +133,20 @@ export function CategoryDetail({
               ) : (
                 <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
                   {ranked.map(({ item }) => (
-                    <ItemCard
+                    <MenuItemView
                       key={item.id}
                       item={item}
                       categorySlug={category.slug}
                       locale={locale}
                       addLabel={tm('add')}
                       featuredLabel={tm('featured')}
+                                  itemStyle={tenant.itemStyle}
                     />
                   ))}
                 </div>
               )}
-            </section>
+              </section>
+            </div>
           )}
 
           {tenant.instagram && (

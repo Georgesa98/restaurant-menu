@@ -16,6 +16,7 @@ import { isLiveFeatured } from '@/lib/search';
 import {
   BODY_FONT_OPTIONS,
   CARD_STYLE_OPTIONS,
+  ITEM_STYLE_OPTIONS,
   HEADING_FONT_OPTIONS,
   MENU_LAYOUT_OPTIONS,
   RADIUS_OPTIONS,
@@ -53,7 +54,7 @@ const TOKEN_KEYS = [
   'shadow',
 ] as const;
 
-const THEME_KEYS = [...TOKEN_KEYS, 'name', 'description', 'cardStyle', 'menuLayout', 'spacing'] as const;
+const THEME_KEYS = [...TOKEN_KEYS, 'name', 'description', 'cardStyle', 'menuLayout', 'spacing', 'defaultCategorySlug', 'itemStyle'] as const;
 
 type SectionProps = { title: string; children: ReactNode; hint?: string };
 
@@ -200,6 +201,8 @@ export function ThemeStudio({ tenantId }: { tenantId: string }) {
       cardStyle: draft.cardStyle,
       menuLayout: draft.menuLayout,
       spacing: draft.spacing,
+      defaultCategorySlug: draft.defaultCategorySlug ?? '',
+      itemStyle: draft.itemStyle ?? 'cards',
       ...Object.fromEntries(TOKEN_KEYS.map((k) => [k, draft[k]])),
     };
     const parsed = themeUpdateSchema.safeParse(payload);
@@ -479,6 +482,39 @@ export function ThemeStudio({ tenantId }: { tenantId: string }) {
                       {t(o.labelKey)}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('itemStyle')}</Label>
+                <select
+                  value={draft.itemStyle ?? 'cards'}
+                  onChange={(e) => setField('itemStyle', e.target.value)}
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                >
+                  {ITEM_STYLE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {t(o.labelKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('defaultCategory')}</Label>
+                <select
+                  value={draft.defaultCategorySlug ?? ''}
+                  onChange={(e) => setField('defaultCategorySlug', e.target.value || null)}
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                >
+                  <option value="">{t('defaultCategoryFirst')}</option>
+                  <option value="all">{t('defaultCategoryAll')}</option>
+                  {[...draft.categories]
+                    .filter((c) => c.isActive)
+                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                    .map((c) => (
+                      <option key={c.id} value={c.slug}>
+                        {resolveTranslation(c, previewLocale ?? appLocale).name}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>

@@ -130,6 +130,8 @@ model Tenant {
   cardStyle       String @default("elevated")
   menuLayout      String @default("single")
   spacing         String @default("comfortable")
+  // "cards" show photos, "text" is a leader-line text list without photos.
+  itemStyle       String @default("cards")
 
   logoUrl     String?
   coverUrl    String?
@@ -141,6 +143,8 @@ model Tenant {
 
   defaultLocale    String   @default("en")
   availableLocales String[] @default(["en"])
+  // Category the menu opens on: a category slug, "all" for the whole menu, or null (first category).
+  defaultCategorySlug String?
 
   // Sync coordination (tablet fleet): monotonic menu revision + poll-flag push.
   revision     Int     @default(0)

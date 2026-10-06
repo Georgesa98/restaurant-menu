@@ -44,7 +44,11 @@ export async function getTenantWithMenu(slug: string): Promise<TenantData | null
     where: { slug },
     include: menuInclude(),
   });
-  return data as TenantData | null;
+  if (!data) return null;
+  // RSC → client boundary: Prisma returns Decimal instances and Dates, which
+  // React cannot serialize. JSON round-trip turns prices into strings
+  // (Decimal.toJSON) and dates into ISO strings — same shape over the wire.
+  return JSON.parse(JSON.stringify(data)) as TenantData;
 }
 
 export async function getAllTenantSlugs(): Promise<{ slug: string }[]> {

@@ -42,7 +42,7 @@ export async function PATCH(req: Request, { params }: Params) {
     );
   }
 
-  const { name, description, cardStyle, menuLayout, spacing, ...tokens } = parsed.data;
+  const { name, description, cardStyle, menuLayout, spacing, itemStyle, defaultCategorySlug, ...tokens } = parsed.data;
   try {
     const tenant = await prisma.tenant.update({
       where: { id },
@@ -52,6 +52,8 @@ export async function PATCH(req: Request, { params }: Params) {
         cardStyle,
         menuLayout,
         spacing,
+        itemStyle,
+        defaultCategorySlug: defaultCategorySlug || null,
         ...tokens,
       },
     });

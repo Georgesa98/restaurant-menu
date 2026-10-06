@@ -8,16 +8,14 @@ import { resolveTranslation } from './menu-helpers';
 import { useCartStore } from '@/lib/stores/cart-store';
 import { MenuTheme } from './menu-theme';
 import { MenuHero } from './menu-hero';
-import { CategoryCard } from './category-card';
-import { CategoryGrid } from './category-grid';
-import { ItemCard } from './item-card';
+import { CategoryList } from './category-list';
+import { MenuItemView } from './menu-item-view';
 import { MenuOrderFooter } from './menu-order-footer';
 
 /**
- * Category landing page mirroring the Flutter MenuPage: hero → global dish
- * search → featured shelf → "Browse categories" grid of image cards.
- * While searching, a flat ranked item grid replaces the grid (like the
- * Flutter SearchResultsSliver).
+ * Category landing page: hero → global dish search → featured shelf →
+ * category list (on top on phones, sidebar at ≥900px) with the selected
+ * category's items. While searching, a flat ranked item grid replaces it.
  */
 export function MenuHome({
   tenant,
@@ -37,6 +35,7 @@ export function MenuHome({
 }) {
   const tm = useTranslations('menu');
   const [query, setQuery] = useState('');
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const { init, ensureVariantDefaults } = useCartStore();
   const isRtl = locale === 'ar';
 
@@ -83,6 +82,27 @@ export function MenuHome({
 
   const searching = searchResults !== null;
 
+  const effectiveSlug = selectedSlug ?? tenant.defaultCategorySlug ?? categories[0]?.slug;
+  const showAll = effectiveSlug === 'all';
+
+  const selectedCategory = useMemo(
+    () => (showAll ? undefined : (categories.find((c) => c.slug === effectiveSlug) ?? categories[0])),
+    [categories, effectiveSlug, showAll],
+  );
+
+  const selectedItems = useMemo(
+    () =>
+      (selectedCategory?.items ?? [])
+        .filter((i) => i.isAvailable)
+        .sort((a, b) => a.displayOrder - b.displayOrder),
+    [selectedCategory],
+  );
+
+  const allAvailable = useMemo(
+    () => categories.map((c) => ({ category: c, items: c.items.filter((i) => i.isAvailable) })),
+    [categories],
+  );
+
   return (
     <>
       <MenuTheme tenant={tenant} scope={themeScope} />
@@ -113,13 +133,14 @@ export function MenuHome({
             ) : (
               <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
                 {searchResults.map(({ item, categorySlug }) => (
-                  <ItemCard
+                  <MenuItemView
                     key={item.id}
                     item={item}
                     categorySlug={categorySlug}
                     locale={locale}
                     addLabel={tm('add')}
                     featuredLabel={tm('featured')}
+                                  itemStyle={tenant.itemStyle}
                   />
                 ))}
               </div>
@@ -133,13 +154,14 @@ export function MenuHome({
                   </div>
                   <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
                     {featuredItems.map(({ item, categorySlug }) => (
-                      <ItemCard
+                      <MenuItemView
                         key={item.id}
                         item={item}
                         categorySlug={categorySlug}
                         locale={locale}
                         addLabel={tm('add')}
                         featuredLabel={tm('featured')}
+                                  itemStyle={tenant.itemStyle}
                       />
                     ))}
                   </div>
@@ -156,20 +178,86 @@ export function MenuHome({
                     {tm('noCategories')}
                   </p>
                 ) : (
-                  <CategoryGrid>
-                    {categories.map((category) => (
-                      <CategoryCard
-                        key={category.id}
-                        tenantSlug={tenant.slug}
-                        category={category}
-                        locale={locale}
-                        isRtl={isRtl}
-                        countLabel={tm('dishesCount', {
-                          count: category.items.filter((i) => i.isAvailable).length,
-                        })}
-                      />
-                    ))}
-                  </CategoryGrid>
+                  <div className="menu-browse">
+                    <CategoryList
+                      categories={categories}
+                      locale={locale}
+                      isRtl={isRtl}
+                      selectedSlug={showAll ? 'all' : selectedCategory?.slug}
+                      onSelect={setSelectedSlug}
+                      allLabel={tm('all')}
+                      countLabel={(count) => tm('dishesCount', { count })}
+                    />
+                    <div className="menu-browse-items">
+                      {showAll ? (
+                        allAvailable.every(({ items }) => items.length === 0) ? (
+                          <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
+                            {tm('noItems')}
+                          </p>
+                        ) : (
+                          allAvailable.map(({ category, items }) =>
+                            items.length === 0 ? null : (
+                              <section key={category.id} className="menu-category">
+                                <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
+                                  <h2 className="menu-section-header">
+                                    {resolveTranslation(category, locale).name}
+                                  </h2>
+                                  {tenant.itemStyle === 'text' && (
+                                    <p className="menu-items-currency">{tm('pricesIn')}</p>
+                                  )}
+                                </div>
+                                <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
+                                  {items.map((item) => (
+                                    <MenuItemView
+                                      key={item.id}
+                                      item={item}
+                                      categorySlug={category.slug}
+                                      locale={locale}
+                                      addLabel={tm('add')}
+                                      featuredLabel={tm('featured')}
+                                  itemStyle={tenant.itemStyle}
+                                    />
+                                  ))}
+                                </div>
+                              </section>
+                            ),
+                          )
+                        )
+                      ) : (
+                        selectedCategory && (
+                          <>
+                            <div className="mb-4 pb-2" style={{ borderBottom: '0.5px solid #E4DDCF' }}>
+                              <h2 className="menu-section-header">
+                                {resolveTranslation(selectedCategory, locale).name}
+                              </h2>
+                              {tenant.itemStyle === 'text' && (
+                                <p className="menu-items-currency">{tm('pricesIn')}</p>
+                              )}
+                            </div>
+                            {selectedItems.length === 0 ? (
+                              <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>
+                                {tm('noItems')}
+                              </p>
+                            ) : (
+                              <div className="menu-items-grid grid grid-cols-1 @min-[480px]:grid-cols-2 @md:grid-cols-3 @lg:grid-cols-4">
+                                {selectedItems.map((item) => (
+                                  <MenuItemView
+                                    key={item.id}
+                                    item={item}
+                                    categorySlug={selectedCategory.slug}
+                                    locale={locale}
+                                    addLabel={tm('add')}
+                                    featuredLabel={tm('featured')}
+                                  itemStyle={tenant.itemStyle}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )
+                      )}
+                    </div>
+                  </div>
                 )}
               </section>
             </div>

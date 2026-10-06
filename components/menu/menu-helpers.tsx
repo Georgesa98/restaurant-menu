@@ -48,6 +48,13 @@ export function formatPrice(price: number, locale: string): string {
   return locale === 'ar' ? `${n} ل.س` : `SYP ${n}`;
 }
 
+export function formatPriceNumber(price: number, locale: string): string {
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   'hot-drinks': Coffee,
   'cold-drinks': CupSoda,
@@ -86,17 +93,6 @@ export function CategorySlugIcon({
 }) {
   const Icon: LucideIcon = CATEGORY_ICONS[slug] ?? UtensilsCrossed;
   return <Icon size={size} strokeWidth={strokeWidth} className={className} />;
-}
-
-/**
- * Category cover: first available item photo by displayOrder.
- * Categories have no image column of their own, so the cover is derived.
- */
-export function categoryCoverImage(category: MenuCategory): string | null {
-  const withPhoto = category.items
-    .filter((i) => i.isAvailable && i.imageUrl)
-    .sort((a, b) => a.displayOrder - b.displayOrder);
-  return withPhoto[0]?.imageUrl ?? null;
 }
 
 export function activeItemCount(category: MenuCategory): number {

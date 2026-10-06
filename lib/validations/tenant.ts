@@ -43,6 +43,8 @@ export const themeUpdateSchema = themeTokensSchema.extend({
   cardStyle: z.enum(['elevated', 'bordered']),
   menuLayout: z.enum(['auto-fit', 'single']),
   spacing: z.enum(['comfortable', 'compact']),
+  itemStyle: z.enum(['cards', 'text']).optional(),
+  defaultCategorySlug: z.string().trim().max(100).optional().nullable().or(z.literal('')),
 });
 
 export type ThemeUpdateInput = z.infer<typeof themeUpdateSchema>;

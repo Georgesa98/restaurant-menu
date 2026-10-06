@@ -23,7 +23,8 @@
     "clearOrder": "مسح الطلب",
     "itemCount": "{count} عناصر",
     "tapToAdd": "اضغط + للإضافة",
-    "orderNotice": "قائمتك لا تصل إلى المطبخ — اعرضها على طاقمنا"
+    "orderNotice": "قائمتك لا تصل إلى المطبخ — اعرضها على طاقمنا",
+    "pricesIn": "الأسعار ل.س"
   },
   "nav": {
     "home": "القائمة",
@@ -231,6 +232,12 @@
     "confirmDeleteSelected": "حذف {count} عناصر؟ لا يمكن التراجع.",
     "deleteFailed": "فشل حذف العناصر",
     "availabilityFailed": "فشل تحديث التوفر",
-    "selectItem": "تحديد العنصر"
+    "selectItem": "تحديد العنصر",
+    "defaultCategory": "الفئة الافتراضية",
+    "defaultCategoryFirst": "الفئة الأولى",
+    "defaultCategoryAll": "الكل (القائمة كاملة)",
+    "itemStyle": "نمط الأصناف",
+    "itemStyleCards": "بطاقات مع صور",
+    "itemStyleText": "قائمة نصية (بدون صور)"
   }
 }

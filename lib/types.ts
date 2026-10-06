@@ -23,6 +23,8 @@ export type TenantData = {
   cardStyle: string;
   menuLayout: string;
   spacing: string;
+  itemStyle: string;
+  defaultCategorySlug: string | null;
   logoUrl: string | null;
   description: string | null;
   address: string | null;

@@ -162,3 +162,8 @@ export const SPACING_OPTIONS = [
   { value: 'comfortable', labelKey: 'spacingComfortable' },
   { value: 'compact', labelKey: 'spacingCompact' },
 ] as const;
+
+export const ITEM_STYLE_OPTIONS = [
+  { value: 'cards', labelKey: 'itemStyleCards' },
+  { value: 'text', labelKey: 'itemStyleText' },
+] as const;
